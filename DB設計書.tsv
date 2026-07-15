@@ -1,0 +1,43 @@
+テーブル名称	カラム名称	データ型	null	デフォルト	備考
+users
+	id	int(11) unsigned			ユーザーID(PK、AUTO_INCREMENT)
+	name	varchar(100)			氏名
+	email	varchar(255)			ログインID、UNIQUE制約
+	password	varchar(255)			パスワードハッシュ(bcrypt等)
+	created_at	datetime			作成日
+	updated_at	datetime			最終更新日
+clients
+	id	int(11) unsigned			クライアントID(PK、AUTO_INCREMENT)
+	user_id	int(11) unsigned			登録ユーザー(FK: users.id、ログインセッションから自動設定。フォーム入力項目ではない)
+	name	varchar(100)			クライアント名(フォーム入力項目はこれのみ)
+	created_at	datetime			作成日
+	updated_at	datetime			最終更新日
+projects
+	id	int(11) unsigned			案件ID(PK、AUTO_INCREMENT)
+	client_id	int(11) unsigned			発注元クライアント(FK: clients.id、案件一覧画面の遷移元から自動設定)
+	project_status_id	int(11) unsigned			案件ステータス(FK: project_statuses.id、フォームでプルダウン選択)
+	name	varchar(150)			案件名
+	due_date	date			期限
+	created_at	datetime			作成日
+	updated_at	datetime			最終更新日
+tasks
+	id	int(11) unsigned			タスクID(PK、AUTO_INCREMENT)
+	project_id	int(11) unsigned			紐づく案件(FK: projects.id、タスク一覧画面の遷移元から自動設定)
+	task_status_id	int(11) unsigned			タスクステータス(FK: task_statuses.id、フォームでプルダウン選択)
+	name	varchar(150)			タスク名
+	due_date	date			期限
+	memo	text	yes		メモ(任意入力)
+	created_at	datetime			作成日
+	updated_at	datetime			最終更新日
+project_statuses
+	id	int(11) unsigned			ステータスID(PK、AUTO_INCREMENT)
+	name	varchar(50)			ステータス名(例:未着手/進行中/完了)
+	sort_order	int(11) unsigned		0	表示順(プルダウン表示順、開発時にシード投入)
+	created_at	datetime			作成日
+	updated_at	datetime			最終更新日
+task_statuses
+	id	int(11) unsigned			ステータスID(PK、AUTO_INCREMENT)
+	name	varchar(50)			ステータス名(例:未着手/進行中/完了)
+	sort_order	int(11) unsigned		0	表示順(プルダウン表示順、開発時にシード投入)
+	created_at	datetime			作成日
+	updated_at	datetime			最終更新日

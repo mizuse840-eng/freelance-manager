@@ -1,0 +1,13 @@
+# FuelPHP
+app/fuel/app/logs/*
+app/fuel/app/cache/*
+app/fuel/app/tmp/*
+app/fuel/vendor/
+
+# 環境依存
+.env
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
