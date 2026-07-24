@@ -3,6 +3,7 @@ app/fuel/app/logs/*
 app/fuel/app/cache/*
 app/fuel/app/tmp/*
 app/fuel/vendor/
+app/fuel/app/config/development/migrations.php
 
 # 環境依存
 .env
