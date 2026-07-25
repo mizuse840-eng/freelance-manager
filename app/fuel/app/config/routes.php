@@ -41,4 +41,5 @@ return array(
 	'login'   => 'auth/login',
 	'logout'  => 'auth/logout',
 	'clients' => 'client/index',
+	'clients/(:any)' => 'client/$1',
 );
