@@ -10,9 +10,12 @@ class Controller_Client extends Controller_Base
 		$clients = \Model_Client::find_all($this->login_user['id']);
 
 		$this->template->title   = 'クライアント一覧';
+		// clients は json_encode() で <script> 内のJSに埋め込むため、
+		// HTMLエスケープ用のoutput_filter（Security::htmlentities）は適用しない。
+		// 代わりにjson_encode側でJSコンテキスト向けのエスケープを行う。
 		$this->template->content = \View::forge('client/index', array(
 			'clients' => $clients,
-		));
+		), false);
 	}
 
 	/**
@@ -58,7 +61,7 @@ class Controller_Client extends Controller_Base
 		$this->template->content = \View::forge('client/create', array(
 			'error' => $error,
 			'name'  => $name,
-		));
+		), false);
 	}
 	/**
 	 * クライアント編集
@@ -147,6 +150,66 @@ class Controller_Client extends Controller_Base
 		$this->template->title   = 'クライアント削除';
 		$this->template->content = \View::forge('client/delete', array(
 			'client' => $client,
+		));
+	}
+	/**
+	 * クライアント名の更新（非同期用API）
+	 */
+	public function action_api_update()
+	{
+		// JSONで返すのでテンプレートは使わない
+		$this->auto_render = false;
+
+		if (\Input::method() !== 'POST')
+		{
+			return $this->json_response(array('success' => false, 'message' => '不正なリクエストです。'), 400);
+		}
+
+		if ( ! \Security::check_token())
+		{
+			return $this->json_response(array('success' => false, 'message' => 'トークンが不正です。'), 400);
+		}
+
+		$id   = \Input::post('id');
+		$name = trim(\Input::post('name', ''));
+
+		if (empty($id))
+		{
+			return $this->json_response(array('success' => false, 'message' => 'IDが指定されていません。'), 400);
+		}
+
+		if ($name === '')
+		{
+			return $this->json_response(array('success' => false, 'message' => 'クライアント名を入力してください。'), 400);
+		}
+
+		if (mb_strlen($name) > 100)
+		{
+			return $this->json_response(array('success' => false, 'message' => 'クライアント名は100文字以内で入力してください。'), 400);
+		}
+
+		$client = \Model_Client::find_by_id($id, $this->login_user['id']);
+
+		if (empty($client))
+		{
+			return $this->json_response(array('success' => false, 'message' => '対象のクライアントが見つかりません。'), 404);
+		}
+
+		\Model_Client::update($id, $this->login_user['id'], array('name' => $name));
+
+		return $this->json_response(array(
+			'success' => true,
+			'client'  => array('id' => (int) $id, 'name' => $name),
+		));
+	}
+
+	/**
+	 * JSONレスポンスを返す
+	 */
+	private function json_response($data, $status = 200)
+	{
+		return new \Response(json_encode($data), $status, array(
+			'Content-Type' => 'application/json; charset=utf-8',
 		));
 	}
 }
