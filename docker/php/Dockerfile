@@ -18,4 +18,10 @@ RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 WORKDIR /var/www/html
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["apache2-foreground"]
