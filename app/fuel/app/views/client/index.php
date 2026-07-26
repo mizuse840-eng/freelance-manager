@@ -23,17 +23,17 @@
 			<tr>
 				<td>
 					<!-- 表示モード -->
-					<span data-bind="visible: ! $data.editing(), text: $data.name, click: function() { $root.startEdit($data); }" style="cursor: pointer;"></span>
+					<span data-bind="visible: ! editing(), text: name, click: function() { $root.startEdit($data); }" style="cursor: pointer;"></span>
 
 					<!-- 編集モード -->
-					<div data-bind="visible: $data.editing()" class="d-flex gap-2">
-						<input type="text" class="form-control form-control-sm" data-bind="value: $data.editName, valueUpdate: 'input'">
+					<div data-bind="visible: editing" class="d-flex gap-2">
+	                    <input type="text" class="form-control form-control-sm" data-bind="value: editName, valueUpdate: 'input'">
 						<button class="btn btn-sm btn-primary" data-bind="click: function() { $root.save($data); }">保存</button>
 						<button class="btn btn-sm btn-secondary" data-bind="click: function() { $root.cancel($data); }">取消</button>
 					</div>
 				</td>
 				<td>
-					<a class="btn btn-sm btn-primary" data-bind="attr: { href: '/clients/edit/' + $data.id }">編集</a>
+		
 					<a class="btn btn-sm btn-danger" data-bind="attr: { href: '/clients/delete/' + $data.id }">削除</a>
 				</td>
 			</tr>
@@ -75,7 +75,8 @@
 		};
 
 		self.cancel = function (row) {
-			row.editing(false);
+			row.editName(row.name());
+		    row.editing(false);
 		};
 
 		self.save = function (row) {
