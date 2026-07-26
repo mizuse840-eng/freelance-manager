@@ -33,7 +33,7 @@
 					</div>
 				</td>
 				<td>
-		
+		          	<a class="btn btn-sm btn-success" data-bind="attr: { href: '/clients/' + $data.id + '/projects' }">詳細</a>
 					<a class="btn btn-sm btn-danger" data-bind="attr: { href: '/clients/delete/' + $data.id }">削除</a>
 				</td>
 			</tr>

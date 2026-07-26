@@ -41,5 +41,9 @@ return array(
 	'login'   => 'auth/login',
 	'logout'  => 'auth/logout',
 	'clients' => 'client/index',
+	'clients/(:num)/projects' => 'project/index/$1',
+	'clients/(:num)/projects/create' => 'project/create/$1',
+	'projects/edit/(:num)' => 'project/edit/$1',
+	'projects/delete/(:num)' => 'project/delete/$1',
 	'clients/(:any)' => 'client/$1',
 );
