@@ -20,12 +20,14 @@ class Controller_Task extends Controller_Base
 			throw new \HttpNotFoundException();
 		}
 
-		$tasks = \Model_Task::find_by_project($project_id, $this->login_user['id']);
+		$tasks    = \Model_Task::find_by_project($project_id, $this->login_user['id']);
+		$statuses = \Model_Task::find_all_statuses();
 
 		$this->template->title   = $project['name'].'のタスク一覧';
 		$this->template->content = \View::forge('task/index', array(
-			'project' => $project,
-			'tasks'   => $tasks,
+			'project'  => $project,
+			'tasks'    => $tasks,
+			'statuses' => $statuses,
 		), false);
 	}
 
@@ -243,5 +245,84 @@ class Controller_Task extends Controller_Base
 		$this->template->content = \View::forge('task/delete', array(
 			'task' => $task,
 		), false);
+	}
+
+	/**
+	 * タスクステータスの更新（非同期用API）
+	 */
+	public function action_api_status()
+	{
+		// JSONで返すのでテンプレートは使わない
+		$this->auto_render = false;
+
+		if (\Input::method() !== 'POST')
+		{
+			return $this->json_response(array('success' => false, 'message' => '不正なリクエストです。'), 400);
+		}
+
+		if ( ! \Security::check_token())
+		{
+			return $this->json_response(array('success' => false, 'message' => 'トークンが不正です。'), 400);
+		}
+
+		$id             = \Input::post('id');
+		$task_status_id = \Input::post('task_status_id');
+
+		if (empty($id))
+		{
+			return $this->json_response(array('success' => false, 'message' => 'IDが指定されていません。'), 400);
+		}
+
+		$task = \Model_Task::find_by_id($id, $this->login_user['id']);
+
+		if (empty($task))
+		{
+			return $this->json_response(array('success' => false, 'message' => '対象のタスクが見つかりません。'), 404);
+		}
+
+		$statuses = \Model_Task::find_all_statuses();
+
+		if ( ! static::valid_status($task_status_id, $statuses))
+		{
+			return $this->json_response(array('success' => false, 'message' => 'ステータスを選択してください。'), 400);
+		}
+
+		// name / due_date / memo は既存の値をそのまま渡す（空で上書きされるのを防ぐ）
+		\Model_Task::update($id, $this->login_user['id'], array(
+			'task_status_id' => $task_status_id,
+			'name'           => $task['name'],
+			'due_date'       => $task['due_date'],
+			'memo'           => $task['memo'] !== null ? $task['memo'] : '',
+		));
+
+		$status_name = '';
+
+		foreach ($statuses as $status)
+		{
+			if ((string) $status['id'] === (string) $task_status_id)
+			{
+				$status_name = $status['name'];
+				break;
+			}
+		}
+
+		return $this->json_response(array(
+			'success' => true,
+			'task'    => array(
+				'id'             => (int) $id,
+				'task_status_id' => (int) $task_status_id,
+				'status_name'    => $status_name,
+			),
+		));
+	}
+
+	/**
+	 * JSONレスポンスを返す
+	 */
+	private function json_response($data, $status = 200)
+	{
+		return new \Response(json_encode($data), $status, array(
+			'Content-Type' => 'application/json; charset=utf-8',
+		));
 	}
 }
