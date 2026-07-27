@@ -28,17 +28,15 @@ class Controller_Client extends Controller_Base
 
 		if (\Input::method() === 'POST')
 		{
+			$name = trim(\Input::post('name', ''));
+
 			// CSRFトークンの検証
 			if ( ! \Security::check_token())
 			{
-				
-				throw new \HttpNotFoundException();
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
 			}
-
-			$name = trim(\Input::post('name', ''));
-
 			// バリデーション
-			if ($name === '')
+			elseif ($name === '')
 			{
 				$error = 'クライアント名を入力してください。';
 			}
@@ -85,14 +83,13 @@ class Controller_Client extends Controller_Base
 
 		if (\Input::method() === 'POST')
 		{
-			if ( ! \Security::check_token())
-			{
-				throw new \HttpNotFoundException();
-			}
-
 			$name = trim(\Input::post('name', ''));
 
-			if ($name === '')
+			if ( ! \Security::check_token())
+			{
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($name === '')
 			{
 				$error = 'クライアント名を入力してください。';
 			}
@@ -135,21 +132,26 @@ class Controller_Client extends Controller_Base
 			throw new \HttpNotFoundException();
 		}
 
+		$error = null;
+
 		if (\Input::method() === 'POST')
 		{
 			if ( ! \Security::check_token())
 			{
-				throw new \HttpNotFoundException();
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
 			}
+			else
+			{
+				\Model_Client::delete($id, $this->login_user['id']);
 
-			\Model_Client::delete($id, $this->login_user['id']);
-
-			\Response::redirect('clients');
+				\Response::redirect('clients');
+			}
 		}
 
 		$this->template->title   = 'クライアント削除';
 		$this->template->content = \View::forge('client/delete', array(
 			'client' => $client,
+			'error'  => $error,
 		));
 	}
 	/**

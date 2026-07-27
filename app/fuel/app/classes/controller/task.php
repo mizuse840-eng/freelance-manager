@@ -58,17 +58,16 @@ class Controller_Task extends Controller_Base
 
 		if (\Input::method() === 'POST')
 		{
-			if ( ! \Security::check_token())
-			{
-				throw new \HttpNotFoundException();
-			}
-
 			$name   = trim(\Input::post('name', ''));
 			$due    = trim(\Input::post('due_date', ''));
 			$status = \Input::post('task_status_id', '');
 			$memo   = trim(\Input::post('memo', ''));
 
-			if ($name === '')
+			if ( ! \Security::check_token())
+			{
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($name === '')
 			{
 				$error = 'タスク名を入力してください。';
 			}
@@ -157,17 +156,16 @@ class Controller_Task extends Controller_Base
 
 		if (\Input::method() === 'POST')
 		{
-			if ( ! \Security::check_token())
-			{
-				throw new \HttpNotFoundException();
-			}
-
 			$name   = trim(\Input::post('name', ''));
 			$due    = trim(\Input::post('due_date', ''));
 			$status = \Input::post('task_status_id', '');
 			$memo   = trim(\Input::post('memo', ''));
 
-			if ($name === '')
+			if ( ! \Security::check_token())
+			{
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($name === '')
 			{
 				$error = 'タスク名を入力してください。';
 			}
@@ -229,21 +227,26 @@ class Controller_Task extends Controller_Base
 			throw new \HttpNotFoundException();
 		}
 
+		$error = null;
+
 		if (\Input::method() === 'POST')
 		{
 			if ( ! \Security::check_token())
 			{
-				throw new \HttpNotFoundException();
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
 			}
+			else
+			{
+				\Model_Task::delete($id, $this->login_user['id']);
 
-			\Model_Task::delete($id, $this->login_user['id']);
-
-			\Response::redirect('projects/'.$task['project_id'].'/tasks');
+				\Response::redirect('projects/'.$task['project_id'].'/tasks');
+			}
 		}
 
 		$this->template->title   = 'タスク削除';
 		$this->template->content = \View::forge('task/delete', array(
-			'task' => $task,
+			'task'  => $task,
+			'error' => $error,
 		), false);
 	}
 

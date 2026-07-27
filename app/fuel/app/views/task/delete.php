@@ -2,6 +2,10 @@
 	<div class="col-md-6">
 		<h1 class="h3 mb-4">タスク削除</h1>
 
+		<?php if ( ! empty($error)): ?>
+			<div class="alert alert-danger"><?php echo e($error); ?></div>
+		<?php endif; ?>
+
 		<div class="alert alert-warning">
 			以下のタスクを削除します。この操作は取り消せません。
 		</div>

@@ -54,16 +54,15 @@ class Controller_Project extends Controller_Base
 
 		if (\Input::method() === 'POST')
 		{
-			if ( ! \Security::check_token())
-			{
-				throw new \HttpNotFoundException();
-			}
-
 			$name   = trim(\Input::post('name', ''));
 			$due    = trim(\Input::post('due_date', ''));
 			$status = \Input::post('project_status_id', '');
 
-			if ($name === '')
+			if ( ! \Security::check_token())
+			{
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($name === '')
 			{
 				$error = '案件名を入力してください。';
 			}
@@ -148,16 +147,15 @@ class Controller_Project extends Controller_Base
 
 		if (\Input::method() === 'POST')
 		{
-			if ( ! \Security::check_token())
-			{
-				throw new \HttpNotFoundException();
-			}
-
 			$name   = trim(\Input::post('name', ''));
 			$due    = trim(\Input::post('due_date', ''));
 			$status = \Input::post('project_status_id', '');
 
-			if ($name === '')
+			if ( ! \Security::check_token())
+			{
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($name === '')
 			{
 				$error = '案件名を入力してください。';
 			}
@@ -217,21 +215,26 @@ class Controller_Project extends Controller_Base
 			throw new \HttpNotFoundException();
 		}
 
+		$error = null;
+
 		if (\Input::method() === 'POST')
 		{
 			if ( ! \Security::check_token())
 			{
-				throw new \HttpNotFoundException();
+				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
 			}
+			else
+			{
+				\Model_Project::delete($id, $this->login_user['id']);
 
-			\Model_Project::delete($id, $this->login_user['id']);
-
-			\Response::redirect('clients/'.$project['client_id'].'/projects');
+				\Response::redirect('clients/'.$project['client_id'].'/projects');
+			}
 		}
 
 		$this->template->title   = '案件削除';
 		$this->template->content = \View::forge('project/delete', array(
 			'project' => $project,
+			'error'   => $error,
 		), false);
 	}
 }
