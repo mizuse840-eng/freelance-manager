@@ -122,6 +122,22 @@ class Model_Project
 	}
 
 	/**
+	 * 指定案件に紐づくタスクの件数を取得
+	 * clientsとJOINし、user_idで絞り込むことで他ユーザーの案件の件数が漏れないようにする
+	 */
+	public static function count_tasks($project_id, $user_id)
+	{
+		return \DB::select(array(\DB::expr('COUNT(*)'), 'cnt'))
+			->from('tasks')
+			->join('projects')->on('tasks.project_id', '=', 'projects.id')
+			->join('clients')->on('projects.client_id', '=', 'clients.id')
+			->where('tasks.project_id', $project_id)
+			->where('clients.user_id', $user_id)
+			->execute()
+			->get('cnt');
+	}
+
+	/**
 	 * 案件ステータス一覧を取得（sort_orderの昇順）
 	 * フォームのプルダウン用
 	 */

@@ -15,14 +15,24 @@
 				<th style="width: 160px;">クライアント名</th>
 				<td><?php echo e($client['name']); ?></td>
 			</tr>
+			<tr>
+				<th>登録されている案件</th>
+				<td><?php echo (int) $project_count; ?>件</td>
+			</tr>
 		</table>
+
+		<?php if ($project_count > 0): ?>
+			<div class="alert alert-danger">
+				案件が登録されているため削除できません。先に案件をすべて削除してください。
+			</div>
+		<?php endif; ?>
 
 		<form method="post" action="/clients/delete/<?php echo $client['id']; ?>">
 			<?php echo \Form::csrf(); ?>
 
 			<div class="d-flex gap-2">
 				<a href="/clients" class="btn btn-secondary">キャンセル</a>
-				<button type="submit" class="btn btn-danger">削除する</button>
+				<button type="submit" class="btn btn-danger" <?php echo $project_count > 0 ? 'disabled' : ''; ?>>削除する</button>
 			</div>
 		</form>
 	</div>

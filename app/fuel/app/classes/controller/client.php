@@ -133,12 +133,17 @@ class Controller_Client extends Controller_Base
 		}
 
 		$error = null;
+		$project_count = \Model_Client::count_projects($id, $this->login_user['id']);
 
 		if (\Input::method() === 'POST')
 		{
 			if ( ! \Security::check_token())
 			{
 				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($project_count > 0)
+			{
+				$error = '案件が登録されているため削除できません。先に案件をすべて削除してください。';
 			}
 			else
 			{
@@ -150,8 +155,9 @@ class Controller_Client extends Controller_Base
 
 		$this->template->title   = 'クライアント削除';
 		$this->template->content = \View::forge('client/delete', array(
-			'client' => $client,
-			'error'  => $error,
+			'client'        => $client,
+			'error'         => $error,
+			'project_count' => $project_count,
 		));
 	}
 	/**

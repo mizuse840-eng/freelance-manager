@@ -17,7 +17,7 @@
 
 			<div class="mb-3">
 				<label class="form-label">期限</label>
-				<input type="date" name="due_date" class="form-control" value="<?php echo e($due_date); ?>" required>
+				<input type="date" name="due_date" class="form-control" value="<?php echo e($due_date); ?>" min="<?php echo date('Y-m-d'); ?>" required>
 			</div>
 
 			<div class="mb-3">

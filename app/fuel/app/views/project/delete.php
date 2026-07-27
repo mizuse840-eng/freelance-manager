@@ -23,14 +23,24 @@
 				<th>ステータス</th>
 				<td><?php echo e($project['status_name']); ?></td>
 			</tr>
+			<tr>
+				<th>登録されているタスク</th>
+				<td><?php echo (int) $task_count; ?>件</td>
+			</tr>
 		</table>
+
+		<?php if ($task_count > 0): ?>
+			<div class="alert alert-danger">
+				タスクが登録されているため削除できません。先にタスクをすべて削除してください。
+			</div>
+		<?php endif; ?>
 
 		<form method="post" action="/projects/delete/<?php echo $project['id']; ?>">
 			<?php echo \Form::csrf(); ?>
 
 			<div class="d-flex gap-2">
 				<a href="/clients/<?php echo $project['client_id']; ?>/projects" class="btn btn-secondary">キャンセル</a>
-				<button type="submit" class="btn btn-danger">削除する</button>
+				<button type="submit" class="btn btn-danger" <?php echo $task_count > 0 ? 'disabled' : ''; ?>>削除する</button>
 			</div>
 		</form>
 	</div>

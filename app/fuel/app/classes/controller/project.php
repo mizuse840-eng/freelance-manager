@@ -78,6 +78,10 @@ class Controller_Project extends Controller_Base
 			{
 				$error = '期限の形式が正しくありません。';
 			}
+			elseif ($due < date('Y-m-d'))
+			{
+				$error = '期限には本日以降の日付を指定してください。';
+			}
 			elseif ( ! static::valid_status($status, $statuses))
 			{
 				$error = 'ステータスを選択してください。';
@@ -216,12 +220,17 @@ class Controller_Project extends Controller_Base
 		}
 
 		$error = null;
+		$task_count = \Model_Project::count_tasks($id, $this->login_user['id']);
 
 		if (\Input::method() === 'POST')
 		{
 			if ( ! \Security::check_token())
 			{
 				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
+			}
+			elseif ($task_count > 0)
+			{
+				$error = 'タスクが登録されているため削除できません。先にタスクをすべて削除してください。';
 			}
 			else
 			{
@@ -233,8 +242,9 @@ class Controller_Project extends Controller_Base
 
 		$this->template->title   = '案件削除';
 		$this->template->content = \View::forge('project/delete', array(
-			'project' => $project,
-			'error'   => $error,
+			'project'    => $project,
+			'error'      => $error,
+			'task_count' => $task_count,
 		), false);
 	}
 }

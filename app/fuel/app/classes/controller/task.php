@@ -83,6 +83,10 @@ class Controller_Task extends Controller_Base
 			{
 				$error = '期限の形式が正しくありません。';
 			}
+			elseif ($due < date('Y-m-d'))
+			{
+				$error = '期限には本日以降の日付を指定してください。';
+			}
 			elseif ( ! static::valid_status($status, $statuses))
 			{
 				$error = 'ステータスを選択してください。';

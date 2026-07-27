@@ -80,4 +80,19 @@ class Model_Client
 			->where('user_id', $user_id)
 			->execute();
 	}
+
+	/**
+	 * 指定クライアントに紐づく案件の件数を取得
+	 * user_idも条件に含め、他ユーザーのクライアントの件数が漏れないようにする
+	 */
+	public static function count_projects($client_id, $user_id)
+	{
+		return \DB::select(array(\DB::expr('COUNT(*)'), 'cnt'))
+			->from('projects')
+			->join('clients')->on('projects.client_id', '=', 'clients.id')
+			->where('projects.client_id', $client_id)
+			->where('clients.user_id', $user_id)
+			->execute()
+			->get('cnt');
+	}
 }
