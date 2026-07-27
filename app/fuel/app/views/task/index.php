@@ -52,52 +52,24 @@
 
 		// 残り日数の色分け・メモのHTML化はUI設計時のルールのまま維持し、
 		// KnockoutへJSONで渡すデータの一部として事前計算しておく
-		$today = new DateTime('today');
-
 		$tasks_for_js = array();
-
 		foreach ($tasks as $task)
 		{
-			$due  = new DateTime($task['due_date']);
-			$diff = (int) $today->diff($due)->format('%r%a');
-
-			if ($diff < 0)
-			{
-				$diff_class = 'text-danger';
-				$diff_label = (abs($diff)).'日超過';
-			}
-			elseif ($diff <= 3)
-			{
-				$diff_class = 'text-danger';
-				$diff_label = '残り'.$diff.'日';
-			}
-			elseif ($diff <= 7)
-			{
-				$diff_class = 'text-warning';
-				$diff_label = '残り'.$diff.'日';
-			}
-			else
-			{
-				$diff_class = 'text-success';
-				$diff_label = '残り'.$diff.'日';
-			}
+			$deadline = \Deadline::calculate($task['due_date']);
 
 			$tasks_for_js[] = array(
 				'id'             => (int) $task['id'],
 				'name'           => $task['name'],
 				'due_date'       => $task['due_date'],
-				'diff_class'     => $diff_class,
-				'diff_label'     => $diff_label,
+				'diff_class'     => $deadline['class'],
+				'diff_label'     => $deadline['label'],
 				'task_status_id' => (int) $task['task_status_id'],
 				'status_name'    => $task['status_name'],
 				'memo_html'      => nl2br(e($task['memo'] !== null ? $task['memo'] : '')),
 			);
 		}
 
-		echo json_encode(
-			$tasks_for_js,
-			JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-		);
+		echo json_encode($tasks_for_js, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	?>;
 	var initialStatuses = <?php echo json_encode(
 		$statuses,

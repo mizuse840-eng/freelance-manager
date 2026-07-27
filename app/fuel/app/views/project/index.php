@@ -23,38 +23,12 @@
 		</thead>
 		<tbody>
 			<?php foreach ($projects as $project): ?>
-				<?php
-					// 残り日数を計算
-					$today = new DateTime('today');
-					$due   = new DateTime($project['due_date']);
-					$diff  = (int) $today->diff($due)->format('%r%a');
-
-					// UI設計で決めた色分けルール
-					if ($diff < 0)
-					{
-						$class = 'text-danger';
-						$label = (abs($diff)).'日超過';
-					}
-					elseif ($diff <= 3)
-					{
-						$class = 'text-danger';
-						$label = '残り'.$diff.'日';
-					}
-					elseif ($diff <= 7)
-					{
-						$class = 'text-warning';
-						$label = '残り'.$diff.'日';
-					}
-					else
-					{
-						$class = 'text-success';
-						$label = '残り'.$diff.'日';
-					}
-				?>
+				<?php $deadline = \Deadline::calculate($project['due_date']); ?>
+					
 				<tr>
 					<td><?php echo e($project['name']); ?></td>
 					<td><?php echo e($project['due_date']); ?></td>
-					<td class="<?php echo $class; ?>"><?php echo e($label); ?></td>
+					<td class="<?php echo $deadline['class']; ?>"><?php echo e($deadline['label']); ?></td>
 					<td><?php echo e($project['status_name']); ?></td>
 					<td>
 						<a href="/projects/<?php echo $project['id']; ?>/tasks" class="btn btn-sm btn-success">詳細</a>
