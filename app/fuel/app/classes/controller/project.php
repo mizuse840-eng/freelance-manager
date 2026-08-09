@@ -21,11 +21,13 @@ class Controller_Project extends Controller_Base
 		}
 
 		$projects = \Model_Project::find_by_client($client_id, $this->login_user['id']);
+		$statuses = \Model_Project::find_all_statuses();
 
 		$this->template->title   = $client['name'].'の案件一覧';
 		$this->template->content = \View::forge('project/index', array(
 			'client'   => $client,
 			'projects' => $projects,
+			'statuses' => $statuses,
 		), false);
 	}
     /**
@@ -246,5 +248,83 @@ class Controller_Project extends Controller_Base
 			'error'      => $error,
 			'task_count' => $task_count,
 		), false);
+	}
+
+	/**
+	 * 案件ステータスの更新（非同期用API）
+	 */
+	public function action_api_status()
+	{
+		// JSONで返すのでテンプレートは使わない
+		$this->auto_render = false;
+
+		if (\Input::method() !== 'POST')
+		{
+			return $this->json_response(array('success' => false, 'message' => '不正なリクエストです。'), 400);
+		}
+
+		if ( ! \Security::check_token())
+		{
+			return $this->json_response(array('success' => false, 'message' => 'トークンが不正です。'), 400);
+		}
+
+		$id                = \Input::post('id');
+		$project_status_id = \Input::post('project_status_id');
+
+		if (empty($id))
+		{
+			return $this->json_response(array('success' => false, 'message' => 'IDが指定されていません。'), 400);
+		}
+
+		$project = \Model_Project::find_by_id($id, $this->login_user['id']);
+
+		if (empty($project))
+		{
+			return $this->json_response(array('success' => false, 'message' => '対象の案件が見つかりません。'), 404);
+		}
+
+		$statuses = \Model_Project::find_all_statuses();
+
+		if ( ! static::valid_status($project_status_id, $statuses))
+		{
+			return $this->json_response(array('success' => false, 'message' => 'ステータスを選択してください。'), 400);
+		}
+
+		// name / due_date は既存の値をそのまま渡す（空で上書きされるのを防ぐ）
+		\Model_Project::update($id, $this->login_user['id'], array(
+			'project_status_id' => $project_status_id,
+			'name'              => $project['name'],
+			'due_date'          => $project['due_date'],
+		));
+
+		$status_name = '';
+
+		foreach ($statuses as $status)
+		{
+			if ((string) $status['id'] === (string) $project_status_id)
+			{
+				$status_name = $status['name'];
+				break;
+			}
+		}
+
+		return $this->json_response(array(
+			'success' => true,
+			'project' => array(
+				'id'                => (int) $id,
+				'project_status_id' => (int) $project_status_id,
+				'status_name'       => $status_name,
+			),
+		));
+	}
+
+	/**
+	 * JSONレスポンスを返す
+	 */
+	private function json_response($data, $status = 200)
+	{
+		return new \Response(json_encode($data), $status, array(
+			'Content-Type' => 'application/json; charset=utf-8',
+		));
 	}
 }

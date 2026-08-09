@@ -45,6 +45,7 @@ return array(
 	'clients/(:num)/projects/create' => 'project/create/$1',
 	'projects/edit/(:num)' => 'project/edit/$1',
 	'projects/delete/(:num)' => 'project/delete/$1',
+	'projects/api_status' => 'project/api_status',
 	'projects/(:num)/tasks' => 'task/index/$1',
 	'projects/(:num)/tasks/create' => 'task/create/$1',
 	'tasks/edit/(:num)' => 'task/edit/$1',
