@@ -18,7 +18,7 @@ return array(
 	 *
 	 */
 
-	'_root_' => 'welcome/index',
+	'_root_' => 'auth/login',
 
 	/**
 	 * -------------------------------------------------------------------------
@@ -38,5 +38,18 @@ return array(
 	 *
 	 */
 
-	'hello(/:name)?' => array('welcome/hello', 'name' => 'hello'),
+	'login'   => 'auth/login',
+	'logout'  => 'auth/logout',
+	'clients' => 'client/index',
+	'clients/(:num)/projects' => 'project/index/$1',
+	'clients/(:num)/projects/create' => 'project/create/$1',
+	'projects/edit/(:num)' => 'project/edit/$1',
+	'projects/delete/(:num)' => 'project/delete/$1',
+	'projects/api_status' => 'project/api_status',
+	'projects/(:num)/tasks' => 'task/index/$1',
+	'projects/(:num)/tasks/create' => 'task/create/$1',
+	'tasks/edit/(:num)' => 'task/edit/$1',
+	'tasks/delete/(:num)' => 'task/delete/$1',
+	'tasks/api_status' => 'task/api_status',
+	'clients/(:any)' => 'client/$1',
 );
