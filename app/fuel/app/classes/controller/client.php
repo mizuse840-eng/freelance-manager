@@ -157,14 +157,4 @@ class Controller_Client extends Controller_Base
 			'client'  => array('id' => (int) $id, 'name' => $name),
 		));
 	}
-
-	/**
-	 * JSONレスポンスを返す
-	 */
-	private function json_response($data, $status = 200)
-	{
-		return new \Response(json_encode($data), $status, array(
-			'Content-Type' => 'application/json; charset=utf-8',
-		));
-	}
 }

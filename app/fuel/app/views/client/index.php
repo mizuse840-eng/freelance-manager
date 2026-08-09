@@ -105,6 +105,9 @@
 			})
 			.then(function (res) { return res.json(); })
 			.then(function (json) {
+				// トークンはリクエストごとに再生成されるため、次回送信用に差し替える
+				if (json.csrf_token) { csrfToken = json.csrf_token; }
+
 				if (json.success) {
 					row.name(json.client.name);
 					row.editing(false);
