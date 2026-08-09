@@ -2,6 +2,18 @@
 
 class Controller_Auth extends Controller_Template
 {
+	use Trait_Headers;
+
+	/**
+	 * 各アクションの実行前に必ず呼ばれる
+	 */
+	public function before()
+	{
+		parent::before();
+
+		$this->set_security_headers();
+	}
+
 	/**
 	 * ログイン画面の表示（GET）／ログイン処理（POST）
 	 */

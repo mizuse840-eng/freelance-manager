@@ -16,6 +16,9 @@ RUN a2enmod rewrite
 # ドキュメントルートをFuelPHPのpublicディレクトリに変更
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
+# PHPのバージョン情報をレスポンスヘッダ（X-Powered-By）に出力しないようにする
+RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/expose-php-off.ini
+
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

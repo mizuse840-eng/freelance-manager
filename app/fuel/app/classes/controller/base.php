@@ -2,6 +2,8 @@
 
 class Controller_Base extends Controller_Template
 {
+	use Trait_Headers;
+
 	/**
 	 * ログイン中のユーザー情報
 	 */
@@ -14,6 +16,9 @@ class Controller_Base extends Controller_Template
 	public function before()
 	{
 		parent::before();
+
+		// セキュリティヘッダを設定
+		$this->set_security_headers();
 
 		$user_id = \Session::get('user_id');
 
