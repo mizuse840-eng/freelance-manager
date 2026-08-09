@@ -16,25 +16,44 @@
 		<thead class="table-light">
 			<tr>
 				<th>クライアント名</th>
-				<th style="width: 220px;">操作</th>
+				<th style="width: 260px;">操作</th>
 			</tr>
 		</thead>
 		<tbody data-bind="foreach: clients">
 			<tr>
 				<td>
-					<!-- 表示モード -->
-					<span data-bind="visible: ! editing(), text: name, click: function() { $root.startEdit($data); }" style="cursor: pointer;"></span>
+					<!-- 表示モード（KnockoutのvisibleはインラインスタイルでON/OFFするため、
+					     Bootstrapのd-flex等(!important)を持つ要素に直接バインドすると
+					     非表示にならない。visible対象はクラス無しの要素にし、
+					     レイアウト用のd-flexは内側の要素に付ける） -->
+					<div data-bind="visible: ! editing()">
+						<span data-bind="text: name"></span>
+						<!-- ko if: url() -->
+						<a data-bind="attr: { href: url }" target="_blank" rel="noopener noreferrer" title="サイトを開く">🔗</a>
+						<!-- /ko -->
+					</div>
 
 					<!-- 編集モード -->
-					<div data-bind="visible: editing" class="d-flex gap-2">
-	                    <input type="text" class="form-control form-control-sm" data-bind="value: editName, valueUpdate: 'input'">
-						<button class="btn btn-sm btn-primary" data-bind="click: function() { $root.save($data); }">保存</button>
-						<button class="btn btn-sm btn-secondary" data-bind="click: function() { $root.cancel($data); }">取消</button>
+					<div data-bind="visible: editing">
+						<div class="d-flex flex-column gap-2" style="max-width: 420px;">
+							<input type="text" class="form-control form-control-sm" placeholder="クライアント名" data-bind="value: editName, valueUpdate: 'input'">
+							<input type="url" class="form-control form-control-sm" placeholder="URL（任意）" data-bind="value: editUrl, valueUpdate: 'input'">
+						</div>
 					</div>
 				</td>
 				<td>
-		          	<a class="btn btn-sm btn-success" data-bind="attr: { href: '/clients/' + $data.id + '/projects' }">詳細</a>
-					<a class="btn btn-sm btn-danger" data-bind="attr: { href: '/clients/delete/' + $data.id }">削除</a>
+					<!-- 表示モード -->
+					<div data-bind="visible: ! editing()">
+						<button class="btn btn-sm btn-primary" data-bind="click: function() { $root.startEdit($data); }">編集</button>
+						<a class="btn btn-sm btn-success" data-bind="attr: { href: '/clients/' + $data.id + '/projects' }">詳細</a>
+						<a class="btn btn-sm btn-danger" data-bind="attr: { href: '/clients/delete/' + $data.id }">削除</a>
+					</div>
+
+					<!-- 編集モード -->
+					<div data-bind="visible: editing">
+						<button class="btn btn-sm btn-primary" data-bind="click: function() { $root.save($data); }">保存</button>
+						<button class="btn btn-sm btn-secondary" data-bind="click: function() { $root.cancel($data); }">取消</button>
+					</div>
 				</td>
 			</tr>
 		</tbody>
@@ -55,8 +74,10 @@
 	function ClientRow(data) {
 		this.id       = data.id;
 		this.name     = ko.observable(data.name);
+		this.url      = ko.observable(data.url || '');
 		this.editing  = ko.observable(false);
 		this.editName = ko.observable(data.name);
+		this.editUrl  = ko.observable(data.url || '');
 	}
 
 	function ClientListViewModel(clients) {
@@ -71,11 +92,13 @@
 
 		self.startEdit = function (row) {
 			row.editName(row.name());
+			row.editUrl(row.url());
 			row.editing(true);
 		};
 
 		self.cancel = function (row) {
 			row.editName(row.name());
+			row.editUrl(row.url());
 		    row.editing(false);
 		};
 
@@ -83,6 +106,7 @@
 			var params = new URLSearchParams();
 			params.append('id', row.id);
 			params.append('name', row.editName());
+			params.append('url', row.editUrl());
 			params.append(csrfKey, csrfToken);
 
 			fetch('/clients/api_update', {
@@ -94,6 +118,7 @@
 			.then(function (json) {
 				if (json.success) {
 					row.name(json.client.name);
+					row.url(json.client.url || '');
 					row.editing(false);
 					self.messageClass('alert-success');
 					self.message('更新しました。');

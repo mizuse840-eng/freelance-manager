@@ -25,10 +25,12 @@ class Controller_Client extends Controller_Base
 	{
 		$error = null;
 		$name  = '';
+		$url   = '';
 
 		if (\Input::method() === 'POST')
 		{
 			$name = trim(\Input::post('name', ''));
+			$url  = trim(\Input::post('url', ''));
 
 			// CSRFトークンの検証
 			if ( ! \Security::check_token())
@@ -44,11 +46,17 @@ class Controller_Client extends Controller_Base
 			{
 				$error = 'クライアント名は100文字以内で入力してください。';
 			}
+			// URLは任意項目。入力された場合のみ形式をチェックする
+			elseif ($url !== '' && ! filter_var($url, FILTER_VALIDATE_URL))
+			{
+				$error = 'URLの形式が正しくありません。';
+			}
 			else
 			{
 				\Model_Client::create(array(
 					'user_id' => $this->login_user['id'],
 					'name'    => $name,
+					'url'     => $url !== '' ? $url : null,
 				));
 
 				\Response::redirect('clients');
@@ -59,6 +67,7 @@ class Controller_Client extends Controller_Base
 		$this->template->content = \View::forge('client/create', array(
 			'error' => $error,
 			'name'  => $name,
+			'url'   => $url,
 		), false);
 	}
 	/**
@@ -180,6 +189,7 @@ class Controller_Client extends Controller_Base
 
 		$id   = \Input::post('id');
 		$name = trim(\Input::post('name', ''));
+		$url  = trim(\Input::post('url', ''));
 
 		if (empty($id))
 		{
@@ -196,6 +206,12 @@ class Controller_Client extends Controller_Base
 			return $this->json_response(array('success' => false, 'message' => 'クライアント名は100文字以内で入力してください。'), 400);
 		}
 
+		// URLは任意項目。入力された場合のみ形式をチェックする
+		if ($url !== '' && ! filter_var($url, FILTER_VALIDATE_URL))
+		{
+			return $this->json_response(array('success' => false, 'message' => 'URLの形式が正しくありません。'), 400);
+		}
+
 		$client = \Model_Client::find_by_id($id, $this->login_user['id']);
 
 		if (empty($client))
@@ -203,11 +219,16 @@ class Controller_Client extends Controller_Base
 			return $this->json_response(array('success' => false, 'message' => '対象のクライアントが見つかりません。'), 404);
 		}
 
-		\Model_Client::update($id, $this->login_user['id'], array('name' => $name));
+		$url = $url !== '' ? $url : null;
+
+		\Model_Client::update($id, $this->login_user['id'], array(
+			'name' => $name,
+			'url'  => $url,
+		));
 
 		return $this->json_response(array(
 			'success' => true,
-			'client'  => array('id' => (int) $id, 'name' => $name),
+			'client'  => array('id' => (int) $id, 'name' => $name, 'url' => $url),
 		));
 	}
 

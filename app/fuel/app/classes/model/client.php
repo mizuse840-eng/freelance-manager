@@ -21,7 +21,7 @@ class Model_Client
 	 */
 	public static function find_by_id($id, $user_id)
 	{
-		return \DB::select('id', 'user_id', 'name', 'created_at', 'updated_at')
+		return \DB::select('id', 'user_id', 'name', 'url', 'created_at', 'updated_at')
 			->from('clients')
 			->where('id', $id)
 			->where('user_id', $user_id)
@@ -41,6 +41,7 @@ class Model_Client
 		$insert_data = array(
 			'user_id'    => $data['user_id'],
 			'name'       => $data['name'],
+			'url'        => $data['url'],
 			'created_at' => $now,
 			'updated_at' => $now,
 		);
@@ -60,6 +61,7 @@ class Model_Client
 	{
 		$update_data = array(
 			'name'       => $data['name'],
+			'url'        => $data['url'],
 			'updated_at' => date('Y-m-d H:i:s'),
 		);
 
