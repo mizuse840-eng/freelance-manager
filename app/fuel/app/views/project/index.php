@@ -118,6 +118,9 @@
 			})
 			.then(function (res) { return res.json(); })
 			.then(function (json) {
+				// トークンはリクエストごとに再生成されるため、次回送信用に差し替える
+				if (json.csrf_token) { csrfToken = json.csrf_token; }
+
 				if (json.success) {
 					row.project_status_id(json.project.project_status_id);
 					row.status_name(json.project.status_name);
