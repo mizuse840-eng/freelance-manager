@@ -39,8 +39,8 @@
 					<select class="form-select form-select-sm" data-bind="value: project_status_id, options: $root.statuses, optionsText: 'name', optionsValue: 'id', event: { change: function() { $root.updateStatus($data); } }"></select>
 				</td>
 				<td>
-					<a class="btn btn-sm btn-success" data-bind="attr: { href: '/projects/' + id + '/tasks' }">詳細</a>
 					<a class="btn btn-sm btn-primary" data-bind="attr: { href: '/projects/edit/' + id }">編集</a>
+					<a class="btn btn-sm btn-success" data-bind="attr: { href: '/projects/' + id + '/tasks' }">詳細</a>
 					<a class="btn btn-sm btn-danger" data-bind="attr: { href: '/projects/delete/' + id }">削除</a>
 				</td>
 			</tr>
