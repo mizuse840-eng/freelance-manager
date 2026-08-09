@@ -51,12 +51,14 @@ class Controller_Project extends Controller_Base
 
 		$error  = null;
 		$name   = '';
+		$url    = '';
 		$due    = '';
 		$status = '';
 
 		if (\Input::method() === 'POST')
 		{
 			$name   = trim(\Input::post('name', ''));
+			$url    = trim(\Input::post('url', ''));
 			$due    = trim(\Input::post('due_date', ''));
 			$status = \Input::post('project_status_id', '');
 
@@ -71,6 +73,11 @@ class Controller_Project extends Controller_Base
 			elseif (mb_strlen($name) > 150)
 			{
 				$error = '案件名は150文字以内で入力してください。';
+			}
+			// URLは任意項目。入力された場合のみ形式をチェックする
+			elseif ($url !== '' && ! filter_var($url, FILTER_VALIDATE_URL))
+			{
+				$error = 'URLの形式が正しくありません。';
 			}
 			elseif ($due === '')
 			{
@@ -94,6 +101,7 @@ class Controller_Project extends Controller_Base
 					'client_id'         => $client_id,
 					'project_status_id' => $status,
 					'name'              => $name,
+					'url'               => $url !== '' ? $url : null,
 					'due_date'          => $due,
 				));
 
@@ -107,6 +115,7 @@ class Controller_Project extends Controller_Base
 			'statuses' => $statuses,
 			'error'    => $error,
 			'name'     => $name,
+			'url'      => $url,
 			'due_date' => $due,
 			'status_id' => $status,
 		), false);
@@ -148,12 +157,14 @@ class Controller_Project extends Controller_Base
 
 		$error  = null;
 		$name   = $project['name'];
+		$url    = $project['url'] !== null ? $project['url'] : '';
 		$due    = $project['due_date'];
 		$status = $project['project_status_id'];
 
 		if (\Input::method() === 'POST')
 		{
 			$name   = trim(\Input::post('name', ''));
+			$url    = trim(\Input::post('url', ''));
 			$due    = trim(\Input::post('due_date', ''));
 			$status = \Input::post('project_status_id', '');
 
@@ -168,6 +179,11 @@ class Controller_Project extends Controller_Base
 			elseif (mb_strlen($name) > 150)
 			{
 				$error = '案件名は150文字以内で入力してください。';
+			}
+			// URLは任意項目。入力された場合のみ形式をチェックする
+			elseif ($url !== '' && ! filter_var($url, FILTER_VALIDATE_URL))
+			{
+				$error = 'URLの形式が正しくありません。';
 			}
 			elseif ($due === '')
 			{
@@ -186,6 +202,7 @@ class Controller_Project extends Controller_Base
 				\Model_Project::update($id, $this->login_user['id'], array(
 					'project_status_id' => $status,
 					'name'              => $name,
+					'url'               => $url !== '' ? $url : null,
 					'due_date'          => $due,
 				));
 
@@ -199,6 +216,7 @@ class Controller_Project extends Controller_Base
 			'statuses'  => $statuses,
 			'error'     => $error,
 			'name'      => $name,
+			'url'       => $url,
 			'due_date'  => $due,
 			'status_id' => $status,
 		), false);
@@ -290,10 +308,11 @@ class Controller_Project extends Controller_Base
 			return $this->json_response(array('success' => false, 'message' => 'ステータスを選択してください。'), 400);
 		}
 
-		// name / due_date は既存の値をそのまま渡す（空で上書きされるのを防ぐ）
+		// name / url / due_date は既存の値をそのまま渡す（空で上書きされるのを防ぐ）
 		\Model_Project::update($id, $this->login_user['id'], array(
 			'project_status_id' => $project_status_id,
 			'name'              => $project['name'],
+			'url'               => $project['url'],
 			'due_date'          => $project['due_date'],
 		));
 

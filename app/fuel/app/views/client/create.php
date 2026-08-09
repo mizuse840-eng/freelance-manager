@@ -14,11 +14,6 @@
 				<input type="text" name="name" class="form-control" value="<?php echo e($name); ?>" required>
 			</div>
 
-			<div class="mb-3">
-				<label class="form-label">URL（任意）</label>
-				<input type="url" name="url" class="form-control" value="<?php echo e($url); ?>" placeholder="https://www.lancers.jp/...">
-			</div>
-
 			<div class="d-flex gap-2">
 				<a href="/clients" class="btn btn-secondary">キャンセル</a>
 				<button type="submit" class="btn btn-primary">保存</button>

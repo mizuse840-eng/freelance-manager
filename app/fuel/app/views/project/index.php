@@ -27,7 +27,12 @@
 		</thead>
 		<tbody data-bind="foreach: projects">
 			<tr>
-				<td data-bind="text: name"></td>
+				<td>
+					<span data-bind="text: name"></span>
+					<!-- ko if: url -->
+					<a class="ms-1 text-decoration-none" data-bind="attr: { href: url }" target="_blank" rel="noopener noreferrer" title="案件ページを開く">🔗</a>
+					<!-- /ko -->
+				</td>
 				<td data-bind="text: due_date"></td>
 				<td data-bind="text: diff_label, attr: { class: diff_class }"></td>
 				<td>
@@ -59,6 +64,7 @@
 			$projects_for_js[] = array(
 				'id'                => (int) $project['id'],
 				'name'              => $project['name'],
+				'url'               => $project['url'],
 				'due_date'          => $project['due_date'],
 				'diff_class'        => $deadline['class'],
 				'diff_label'        => $deadline['label'],
@@ -79,6 +85,7 @@
 	function ProjectRow(data) {
 		this.id = data.id;
 		this.name = data.name;
+		this.url = data.url || '';
 		this.due_date = data.due_date;
 		this.diff_class = data.diff_class;
 		this.diff_label = data.diff_label;

@@ -15,6 +15,11 @@
 			</div>
 
 			<div class="mb-3">
+				<label class="form-label">案件URL（任意）</label>
+				<input type="url" name="url" class="form-control" value="<?php echo e($url); ?>" placeholder="https://www.lancers.jp/work/detail/...">
+			</div>
+
+			<div class="mb-3">
 				<label class="form-label">期限</label>
 				<input type="date" name="due_date" class="form-control" value="<?php echo e($due_date); ?>" required>
 			</div>

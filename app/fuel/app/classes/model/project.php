@@ -14,6 +14,7 @@ class Model_Project
 				'projects.client_id',
 				'projects.project_status_id',
 				'projects.name',
+				'projects.url',
 				'projects.due_date',
 				'projects.created_at',
 				'projects.updated_at',
@@ -41,6 +42,7 @@ class Model_Project
 				'projects.client_id',
 				'projects.project_status_id',
 				'projects.name',
+				'projects.url',
 				'projects.due_date',
 				'projects.created_at',
 				'projects.updated_at',
@@ -68,6 +70,7 @@ class Model_Project
 			'client_id'         => $data['client_id'],
 			'project_status_id' => $data['project_status_id'],
 			'name'              => $data['name'],
+			'url'               => $data['url'],
 			'due_date'          => $data['due_date'],
 			'created_at'        => $now,
 			'updated_at'        => $now,
@@ -93,9 +96,10 @@ class Model_Project
 		}
 
 		$update_data = array(
-			
+
 			'project_status_id' => $data['project_status_id'],
 			'name'              => $data['name'],
+			'url'               => $data['url'],
 			'due_date'          => $data['due_date'],
 			'updated_at'        => date('Y-m-d H:i:s'),
 		);

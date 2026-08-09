@@ -28,17 +28,11 @@
 					     レイアウト用のd-flexは内側の要素に付ける） -->
 					<div data-bind="visible: ! editing()">
 						<span data-bind="text: name"></span>
-						<!-- ko if: url() -->
-						<a data-bind="attr: { href: url }" target="_blank" rel="noopener noreferrer" title="サイトを開く">🔗</a>
-						<!-- /ko -->
 					</div>
 
 					<!-- 編集モード -->
 					<div data-bind="visible: editing">
-						<div class="d-flex flex-column gap-2" style="max-width: 420px;">
-							<input type="text" class="form-control form-control-sm" placeholder="クライアント名" data-bind="value: editName, valueUpdate: 'input'">
-							<input type="url" class="form-control form-control-sm" placeholder="URL（任意）" data-bind="value: editUrl, valueUpdate: 'input'">
-						</div>
+						<input type="text" class="form-control form-control-sm" style="max-width: 420px;" data-bind="value: editName, valueUpdate: 'input'">
 					</div>
 				</td>
 				<td>
@@ -74,10 +68,8 @@
 	function ClientRow(data) {
 		this.id       = data.id;
 		this.name     = ko.observable(data.name);
-		this.url      = ko.observable(data.url || '');
 		this.editing  = ko.observable(false);
 		this.editName = ko.observable(data.name);
-		this.editUrl  = ko.observable(data.url || '');
 	}
 
 	function ClientListViewModel(clients) {
@@ -92,13 +84,11 @@
 
 		self.startEdit = function (row) {
 			row.editName(row.name());
-			row.editUrl(row.url());
 			row.editing(true);
 		};
 
 		self.cancel = function (row) {
 			row.editName(row.name());
-			row.editUrl(row.url());
 		    row.editing(false);
 		};
 
@@ -106,7 +96,6 @@
 			var params = new URLSearchParams();
 			params.append('id', row.id);
 			params.append('name', row.editName());
-			params.append('url', row.editUrl());
 			params.append(csrfKey, csrfToken);
 
 			fetch('/clients/api_update', {
@@ -118,7 +107,6 @@
 			.then(function (json) {
 				if (json.success) {
 					row.name(json.client.name);
-					row.url(json.client.url || '');
 					row.editing(false);
 					self.messageClass('alert-success');
 					self.message('更新しました。');
