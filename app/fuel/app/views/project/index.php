@@ -51,36 +51,17 @@
 
 <script>
 (function () {
-	// PHPから初期データを渡す
-	var initialProjects = <?php
-
-		// 残り日数の色分けはUI設計時のルールのまま維持し、
-		// KnockoutへJSONで渡すデータの一部として事前計算しておく
-		$projects_for_js = array();
-		foreach ($projects as $project)
-		{
-			$deadline = \Deadline::calculate($project['due_date']);
-
-			$projects_for_js[] = array(
-				'id'                => (int) $project['id'],
-				'name'              => $project['name'],
-				'url'               => $project['url'],
-				'due_date'          => $project['due_date'],
-				'diff_class'        => $deadline['class'],
-				'diff_label'        => $deadline['label'],
-				'project_status_id' => (int) $project['project_status_id'],
-				'status_name'       => $project['status_name'],
-			);
-		}
-
-		echo json_encode($projects_for_js, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-	?>;
-	var initialStatuses = <?php echo json_encode(
+	// PHPから初期データを渡す（整形済みのデータをControllerから受け取る）
+	const initialProjects = <?php echo json_encode(
+		$projects,
+		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+	); ?>;
+	const initialStatuses = <?php echo json_encode(
 		$statuses,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	); ?>;
-	var csrfKey   = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
-	var csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
+	const csrfKey = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
+	let csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
 
 	function ProjectRow(data) {
 		this.id = data.id;
@@ -90,11 +71,10 @@
 		this.diff_class = data.diff_class;
 		this.diff_label = data.diff_label;
 		this.project_status_id = ko.observable(data.project_status_id);
-		this.status_name = ko.observable(data.status_name);
 	}
 
 	function ProjectListViewModel(projects, statuses) {
-		var self = this;
+		const self = this;
 
 		self.statuses = statuses;
 
@@ -106,7 +86,7 @@
 		self.messageClass = ko.observable('alert-success');
 
 		self.updateStatus = function (row) {
-			var params = new URLSearchParams();
+			const params = new URLSearchParams();
 			params.append('id', row.id);
 			params.append('project_status_id', row.project_status_id());
 			params.append(csrfKey, csrfToken);
@@ -123,7 +103,6 @@
 
 				if (json.success) {
 					row.project_status_id(json.project.project_status_id);
-					row.status_name(json.project.status_name);
 					self.messageClass('alert-success');
 					self.message('更新しました。');
 				} else {

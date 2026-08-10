@@ -19,106 +19,85 @@ class Controller_Client extends Controller_Base
 	}
 
 	/**
+	 * クライアント登録フォームの表示
+	 */
+	public function get_create()
+	{
+		$this->render_create();
+	}
+
+	/**
 	 * クライアント登録
 	 */
-	public function action_create()
+	public function post_create()
 	{
-		$error = null;
-		$name  = '';
+		$name = trim(\Input::post('name', ''));
 
-		if (\Input::method() === 'POST')
+		// CSRFトークンの検証
+		if ( ! \Security::check_token())
 		{
-			$name = trim(\Input::post('name', ''));
-
-			// CSRFトークンの検証
-			if ( ! \Security::check_token())
-			{
-				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
-			}
-			// バリデーション
-			elseif ($name === '')
-			{
-				$error = 'クライアント名を入力してください。';
-			}
-			elseif (mb_strlen($name) > 100)
-			{
-				$error = 'クライアント名は100文字以内で入力してください。';
-			}
-			else
-			{
-				\Model_Client::create(array(
-					'user_id' => $this->login_user['id'],
-					'name'    => $name,
-				));
-
-				\Response::redirect('clients');
-			}
+			return $this->render_create('セッションの有効期限が切れました。お手数ですが、もう一度お試しください。', $name);
 		}
 
-		$this->template->title   = 'クライアント登録';
-		$this->template->content = \View::forge('client/create', array(
-			'error' => $error,
-			'name'  => $name,
-		), false);
+		// バリデーション
+		if ($name === '')
+		{
+			return $this->render_create('クライアント名を入力してください。', $name);
+		}
+
+		if (mb_strlen($name) > 100)
+		{
+			return $this->render_create('クライアント名は100文字以内で入力してください。', $name);
+		}
+
+		\Model_Client::create(array(
+			'user_id' => $this->login_user['id'],
+			'name'    => $name,
+		));
+
+		\Response::redirect('clients');
+	}
+
+	/**
+	 * クライアント削除の確認画面
+	 */
+	public function get_delete($id = null)
+	{
+		$client = $this->find_client_or_404($id);
+
+		$this->render_delete($client, $this->count_projects($client));
 	}
 
 	/**
 	 * クライアント削除
 	 */
-	public function action_delete($id = null)
+	public function post_delete($id = null)
 	{
-		if (empty($id))
+		$client        = $this->find_client_or_404($id);
+		$project_count = $this->count_projects($client);
+
+		if ( ! \Security::check_token())
 		{
-			throw new \HttpNotFoundException();
+			return $this->render_delete($client, $project_count, 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。');
 		}
 
-		$client = \Model_Client::find_by_id($id, $this->login_user['id']);
-
-		if (empty($client))
+		if ($project_count > 0)
 		{
-			throw new \HttpNotFoundException();
+			return $this->render_delete($client, $project_count, '案件が登録されているため削除できません。先に案件をすべて削除してください。');
 		}
 
-		$error = null;
-		$project_count = \Model_Client::count_projects($id, $this->login_user['id']);
+		\Model_Client::delete($client['id'], $this->login_user['id']);
 
-		if (\Input::method() === 'POST')
-		{
-			if ( ! \Security::check_token())
-			{
-				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
-			}
-			elseif ($project_count > 0)
-			{
-				$error = '案件が登録されているため削除できません。先に案件をすべて削除してください。';
-			}
-			else
-			{
-				\Model_Client::delete($id, $this->login_user['id']);
-
-				\Response::redirect('clients');
-			}
-		}
-
-		$this->template->title   = 'クライアント削除';
-		$this->template->content = \View::forge('client/delete', array(
-			'client'        => $client,
-			'error'         => $error,
-			'project_count' => $project_count,
-		));
+		\Response::redirect('clients');
 	}
+
 	/**
 	 * クライアント名の更新（非同期用API）
 	 */
-	public function action_api_update()
+	public function post_api_update()
 	{
 		// JSONで返すのでテンプレートは使わない
 		$this->auto_render = false;
-
-		if (\Input::method() !== 'POST')
-		{
-			return $this->json_response(array('success' => false, 'message' => '不正なリクエストです。'), 400);
-		}
 
 		if ( ! \Security::check_token())
 		{
@@ -156,5 +135,59 @@ class Controller_Client extends Controller_Base
 			'success' => true,
 			'client'  => array('id' => (int) $id, 'name' => $name),
 		));
+	}
+
+	/**
+	 * URLで指定されたクライアントを取得する
+	 * find_by_idはuser_idでも絞り込むため、他人のクライアントIDを指定した場合も404になる
+	 */
+	private function find_client_or_404($id)
+	{
+		if (empty($id))
+		{
+			throw new \HttpNotFoundException();
+		}
+
+		$client = \Model_Client::find_by_id($id, $this->login_user['id']);
+
+		if (empty($client))
+		{
+			throw new \HttpNotFoundException();
+		}
+
+		return $client;
+	}
+
+	/**
+	 * 指定クライアントに紐づく案件の件数を取得する
+	 */
+	private function count_projects($client)
+	{
+		return \Model_Client::count_projects($client['id'], $this->login_user['id']);
+	}
+
+	/**
+	 * クライアント登録画面を表示する
+	 */
+	private function render_create($error = null, $name = '')
+	{
+		$this->template->title   = 'クライアント登録';
+		$this->template->content = \View::forge('client/create', array(
+			'error' => $error,
+			'name'  => $name,
+		), false);
+	}
+
+	/**
+	 * クライアント削除の確認画面を表示する
+	 */
+	private function render_delete($client, $project_count, $error = null)
+	{
+		$this->template->title   = 'クライアント削除';
+		$this->template->content = \View::forge('client/delete', array(
+			'client'        => $client,
+			'error'         => $error,
+			'project_count' => $project_count,
+		), false);
 	}
 }

@@ -58,12 +58,12 @@
 <script>
 (function () {
 	// PHPから初期データを渡す
-	var initialClients = <?php echo json_encode(
+	const initialClients = <?php echo json_encode(
 		$clients,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	); ?>;
-	var csrfKey   = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
-	var csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
+	const csrfKey = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
+	let csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
 
 	function ClientRow(data) {
 		this.id       = data.id;
@@ -73,7 +73,7 @@
 	}
 
 	function ClientListViewModel(clients) {
-		var self = this;
+		const self = this;
 
 		self.clients = ko.observableArray(clients.map(function (c) {
 			return new ClientRow(c);
@@ -89,11 +89,11 @@
 
 		self.cancel = function (row) {
 			row.editName(row.name());
-		    row.editing(false);
+			row.editing(false);
 		};
 
 		self.save = function (row) {
-			var params = new URLSearchParams();
+			const params = new URLSearchParams();
 			params.append('id', row.id);
 			params.append('name', row.editName());
 			params.append(csrfKey, csrfToken);

@@ -27,11 +27,7 @@ class Controller_Base extends Controller_Template
 			\Response::redirect('login');
 		}
 
-		$this->login_user = \DB::select('id', 'name', 'email')
-			->from('users')
-			->where('id', $user_id)
-			->execute()
-			->current();
+		$this->login_user = \Model_User::find_by_id($user_id);
 
 		if (empty($this->login_user))
 		{

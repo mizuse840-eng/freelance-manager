@@ -78,7 +78,8 @@ class Model_Task
 			'updated_at'     => $now,
 		);
 
-		list($id, $affected_rows) = \DB::insert('tasks')
+		// executeは array(挿入されたID, 挿入件数) を返す
+		list($id) = \DB::insert('tasks')
 			->set($insert_data)
 			->execute();
 
