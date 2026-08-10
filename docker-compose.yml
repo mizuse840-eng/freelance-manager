@@ -7,6 +7,11 @@ services:
       - "8080:80"
     volumes:
       - ./app:/var/www/html
+      # ログはホストとのバインドマウントから外し、Dockerボリュームに置く。
+      # Windowsのバインドマウント越しに追記し続けると稀に Permission denied となり、
+      # Fuel::init() の段階で全エンドポイントが500になることがあるため。
+      # 中身は docker compose -p freelance exec php tail -f fuel/app/logs/... で参照する。
+      - fuel_logs:/var/www/html/fuel/app/logs
     depends_on:
       - mysql
 
@@ -25,3 +30,4 @@ services:
 
 volumes:
   mysql_data:
+  fuel_logs:
