@@ -31,6 +31,14 @@ class Controller_Auth extends Controller_Template
 	{
 		$this->redirect_if_logged_in();
 
+		// CSRFトークンの検証
+		// 攻撃者のアカウントへ強制的にログインさせられるのを防ぐため、
+		// 認証の前（DBを引く前）に検証する
+		if ( ! \Security::check_token())
+		{
+			return $this->render_login('セッションの有効期限が切れました。お手数ですが、もう一度お試しください。');
+		}
+
 		$email    = \Input::post('email');
 		$password = \Input::post('password');
 
