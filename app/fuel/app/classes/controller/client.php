@@ -188,6 +188,6 @@ class Controller_Client extends Controller_Base
 			'client'        => $client,
 			'error'         => $error,
 			'project_count' => $project_count,
-		));
+		), false);
 	}
 }
