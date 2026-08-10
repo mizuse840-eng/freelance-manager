@@ -96,7 +96,6 @@ class Model_Project
 		}
 
 		$update_data = array(
-
 			'project_status_id' => $data['project_status_id'],
 			'name'              => $data['name'],
 			'url'               => $data['url'],

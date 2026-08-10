@@ -30,7 +30,8 @@ class Controller_Project extends Controller_Base
 			'statuses' => $statuses,
 		), false);
 	}
-    /**
+
+	/**
 	 * 案件登録
 	 */
 	public function action_create($client_id = null)
@@ -136,7 +137,8 @@ class Controller_Project extends Controller_Base
 
 		return false;
 	}
-    /**
+
+	/**
 	 * 案件編集
 	 */
 	public function action_edit($id = null)

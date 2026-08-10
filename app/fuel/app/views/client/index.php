@@ -89,7 +89,7 @@
 
 		self.cancel = function (row) {
 			row.editName(row.name());
-		    row.editing(false);
+			row.editing(false);
 		};
 
 		self.save = function (row) {

@@ -107,6 +107,7 @@ class Controller_Client extends Controller_Base
 			'project_count' => $project_count,
 		));
 	}
+
 	/**
 	 * クライアント名の更新（非同期用API）
 	 */
