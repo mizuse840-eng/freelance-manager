@@ -7,21 +7,10 @@ class Controller_Task extends Controller_Base
 	 */
 	public function action_index($project_id = null)
 	{
-		if (empty($project_id))
-		{
-			throw new \HttpNotFoundException();
-		}
+		$project = $this->find_project_or_404($project_id);
 
-		// 案件の所有確認（他人の案件IDを弾く）
-		$project = \Model_Project::find_by_id($project_id, $this->login_user['id']);
-
-		if (empty($project))
-		{
-			throw new \HttpNotFoundException();
-		}
-
-		$tasks    = \Model_Task::find_by_project($project_id, $this->login_user['id']);
-		$statuses = \Model_Task::find_all_statuses();
+		$tasks    = \Model_Task::find_by_project($project['id'], $this->login_user['id']);
+		$statuses = static::statuses();
 
 		$this->template->title   = $project['name'].'のタスク一覧';
 		$this->template->content = \View::forge('task/index', array(
@@ -32,240 +21,131 @@ class Controller_Task extends Controller_Base
 	}
 
 	/**
-	 * タスク登録
+	 * タスク登録フォームの表示
 	 */
-	public function action_create($project_id = null)
+	public function get_create($project_id = null)
 	{
-		if (empty($project_id))
-		{
-			throw new \HttpNotFoundException();
-		}
+		$project = $this->find_project_or_404($project_id);
 
-		$project = \Model_Project::find_by_id($project_id, $this->login_user['id']);
-
-		if (empty($project))
-		{
-			throw new \HttpNotFoundException();
-		}
-
-		$statuses = \Model_Task::find_all_statuses();
-
-		$error  = null;
-		$name   = '';
-		$due    = '';
-		$status = '';
-		$memo   = '';
-
-		if (\Input::method() === 'POST')
-		{
-			$name   = trim(\Input::post('name', ''));
-			$due    = trim(\Input::post('due_date', ''));
-			$status = \Input::post('task_status_id', '');
-			$memo   = trim(\Input::post('memo', ''));
-
-			if ( ! \Security::check_token())
-			{
-				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
-			}
-			elseif ($name === '')
-			{
-				$error = 'タスク名を入力してください。';
-			}
-			elseif (mb_strlen($name) > 150)
-			{
-				$error = 'タスク名は150文字以内で入力してください。';
-			}
-			elseif ($due === '')
-			{
-				$error = '期限を入力してください。';
-			}
-			elseif ( ! preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $due))
-			{
-				$error = '期限の形式が正しくありません。';
-			}
-			elseif ($due < date('Y-m-d'))
-			{
-				$error = '期限には本日以降の日付を指定してください。';
-			}
-			elseif ( ! static::valid_status($status, $statuses))
-			{
-				$error = 'ステータスを選択してください。';
-			}
-			else
-			{
-				\Model_Task::create(array(
-					'project_id'     => $project_id,
-					'task_status_id' => $status,
-					'name'           => $name,
-					'due_date'       => $due,
-					'memo'           => $memo,
-				));
-
-				\Response::redirect('projects/'.$project_id.'/tasks');
-			}
-		}
-
-		$this->template->title   = 'タスク登録';
-		$this->template->content = \View::forge('task/create', array(
-			'project'   => $project,
-			'statuses'  => $statuses,
-			'error'     => $error,
-			'name'      => $name,
-			'due_date'  => $due,
-			'status_id' => $status,
-			'memo'      => $memo,
-		), false);
+		$this->render_create($project, array(
+			'name'           => '',
+			'due_date'       => '',
+			'task_status_id' => '',
+			'memo'           => '',
+		));
 	}
 
 	/**
-	 * 送信されたステータスIDが実在するものか検証する
+	 * タスク登録
 	 */
-	private static function valid_status($status_id, $statuses)
+	public function post_create($project_id = null)
 	{
-		foreach ($statuses as $status)
+		$project = $this->find_project_or_404($project_id);
+		$input   = static::post_input();
+
+		if ( ! \Security::check_token())
 		{
-			if ((string) $status['id'] === (string) $status_id)
-			{
-				return true;
-			}
+			return $this->render_create($project, $input, 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。');
 		}
 
-		return false;
+		// 登録時は過去日を弾く（編集時は登録済みデータの修正を妨げないため許容する）
+		$error = static::validate($input, true);
+
+		if ($error !== null)
+		{
+			return $this->render_create($project, $input, $error);
+		}
+
+		\Model_Task::create(array(
+			'project_id'     => $project['id'],
+			'task_status_id' => $input['task_status_id'],
+			'name'           => $input['name'],
+			'due_date'       => $input['due_date'],
+			'memo'           => $input['memo'],
+		));
+
+		\Response::redirect('projects/'.$project['id'].'/tasks');
+	}
+
+	/**
+	 * タスク編集フォームの表示
+	 */
+	public function get_edit($id = null)
+	{
+		$task = $this->find_task_or_404($id);
+
+		$this->render_edit($task, array(
+			'name'           => $task['name'],
+			'due_date'       => $task['due_date'],
+			'task_status_id' => $task['task_status_id'],
+			'memo'           => $task['memo'],
+		));
 	}
 
 	/**
 	 * タスク編集
 	 */
-	public function action_edit($id = null)
+	public function post_edit($id = null)
 	{
-		if (empty($id))
+		$task  = $this->find_task_or_404($id);
+		$input = static::post_input();
+
+		if ( ! \Security::check_token())
 		{
-			throw new \HttpNotFoundException();
+			return $this->render_edit($task, $input, 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。');
 		}
 
-		$task = \Model_Task::find_by_id($id, $this->login_user['id']);
+		$error = static::validate($input, false);
 
-		if (empty($task))
+		if ($error !== null)
 		{
-			throw new \HttpNotFoundException();
+			return $this->render_edit($task, $input, $error);
 		}
 
-		$statuses = \Model_Task::find_all_statuses();
+		\Model_Task::update($task['id'], $this->login_user['id'], array(
+			'task_status_id' => $input['task_status_id'],
+			'name'           => $input['name'],
+			'due_date'       => $input['due_date'],
+			'memo'           => $input['memo'],
+		));
 
-		$error  = null;
-		$name   = $task['name'];
-		$due    = $task['due_date'];
-		$status = $task['task_status_id'];
-		$memo   = $task['memo'];
+		\Response::redirect('projects/'.$task['project_id'].'/tasks');
+	}
 
-		if (\Input::method() === 'POST')
-		{
-			$name   = trim(\Input::post('name', ''));
-			$due    = trim(\Input::post('due_date', ''));
-			$status = \Input::post('task_status_id', '');
-			$memo   = trim(\Input::post('memo', ''));
+	/**
+	 * タスク削除の確認画面
+	 */
+	public function get_delete($id = null)
+	{
+		$task = $this->find_task_or_404($id);
 
-			if ( ! \Security::check_token())
-			{
-				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
-			}
-			elseif ($name === '')
-			{
-				$error = 'タスク名を入力してください。';
-			}
-			elseif (mb_strlen($name) > 150)
-			{
-				$error = 'タスク名は150文字以内で入力してください。';
-			}
-			elseif ($due === '')
-			{
-				$error = '期限を入力してください。';
-			}
-			elseif ( ! preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $due))
-			{
-				$error = '期限の形式が正しくありません。';
-			}
-			elseif ( ! static::valid_status($status, $statuses))
-			{
-				$error = 'ステータスを選択してください。';
-			}
-			else
-			{
-				\Model_Task::update($id, $this->login_user['id'], array(
-					'task_status_id' => $status,
-					'name'           => $name,
-					'due_date'       => $due,
-					'memo'           => $memo,
-				));
-
-				\Response::redirect('projects/'.$task['project_id'].'/tasks');
-			}
-		}
-
-		$this->template->title   = 'タスク編集';
-		$this->template->content = \View::forge('task/edit', array(
-			'task'      => $task,
-			'statuses'  => $statuses,
-			'error'     => $error,
-			'name'      => $name,
-			'due_date'  => $due,
-			'status_id' => $status,
-			'memo'      => $memo,
-		), false);
+		$this->render_delete($task);
 	}
 
 	/**
 	 * タスク削除
 	 */
-	public function action_delete($id = null)
+	public function post_delete($id = null)
 	{
-		if (empty($id))
+		$task = $this->find_task_or_404($id);
+
+		if ( ! \Security::check_token())
 		{
-			throw new \HttpNotFoundException();
+			return $this->render_delete($task, 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。');
 		}
 
-		$task = \Model_Task::find_by_id($id, $this->login_user['id']);
+		\Model_Task::delete($task['id'], $this->login_user['id']);
 
-		if (empty($task))
-		{
-			throw new \HttpNotFoundException();
-		}
-
-		$error = null;
-
-		if (\Input::method() === 'POST')
-		{
-			if ( ! \Security::check_token())
-			{
-				$error = 'セッションの有効期限が切れました。お手数ですが、もう一度お試しください。';
-			}
-			else
-			{
-				\Model_Task::delete($id, $this->login_user['id']);
-
-				\Response::redirect('projects/'.$task['project_id'].'/tasks');
-			}
-		}
-
-		$this->template->title   = 'タスク削除';
-		$this->template->content = \View::forge('task/delete', array(
-			'task'  => $task,
-			'error' => $error,
-		), false);
+		\Response::redirect('projects/'.$task['project_id'].'/tasks');
 	}
 
 	/**
 	 * タスクステータスの更新（非同期用API）
 	 */
-	public function action_api_status()
+	public function post_api_status()
 	{
 		// JSONで返すのでテンプレートは使わない
 		$this->auto_render = false;
-
-		if (\Input::method() !== 'POST')
-		{
-			return $this->json_response(array('success' => false, 'message' => '不正なリクエストです。'), 400);
-		}
 
 		if ( ! \Security::check_token())
 		{
@@ -287,7 +167,7 @@ class Controller_Task extends Controller_Base
 			return $this->json_response(array('success' => false, 'message' => '対象のタスクが見つかりません。'), 404);
 		}
 
-		$statuses = \Model_Task::find_all_statuses();
+		$statuses = static::statuses();
 
 		if ( ! static::valid_status($task_status_id, $statuses))
 		{
@@ -321,5 +201,182 @@ class Controller_Task extends Controller_Base
 				'status_name'    => $status_name,
 			),
 		));
+	}
+
+	/**
+	 * POSTされた入力値をまとめて取得する
+	 */
+	private static function post_input()
+	{
+		return array(
+			'name'           => trim(\Input::post('name', '')),
+			'due_date'       => trim(\Input::post('due_date', '')),
+			'task_status_id' => \Input::post('task_status_id', ''),
+			'memo'           => trim(\Input::post('memo', '')),
+		);
+	}
+
+	/**
+	 * 入力値を検証し、最初に見つかったエラーメッセージを返す
+	 * 問題が無ければ null を返す
+	 *
+	 * @param  array $input           post_input()で取得した入力値
+	 * @param  bool  $reject_past_due 期限に過去日を許容しないか（登録時のみtrue）
+	 * @return string|null
+	 */
+	private static function validate($input, $reject_past_due)
+	{
+		if ($input['name'] === '')
+		{
+			return 'タスク名を入力してください。';
+		}
+
+		if (mb_strlen($input['name']) > 150)
+		{
+			return 'タスク名は150文字以内で入力してください。';
+		}
+
+		if ($input['due_date'] === '')
+		{
+			return '期限を入力してください。';
+		}
+
+		if ( ! preg_match('/\A\d{4}-\d{2}-\d{2}\z/', $input['due_date']))
+		{
+			return '期限の形式が正しくありません。';
+		}
+
+		if ($reject_past_due && $input['due_date'] < date('Y-m-d'))
+		{
+			return '期限には本日以降の日付を指定してください。';
+		}
+
+		if ( ! static::valid_status($input['task_status_id'], static::statuses()))
+		{
+			return 'ステータスを選択してください。';
+		}
+
+		return null;
+	}
+
+	/**
+	 * タスクステータス一覧を取得する
+	 * 1リクエスト内で検証・画面表示から何度も参照するため、取得結果を使い回す
+	 */
+	private static function statuses()
+	{
+		static $statuses = null;
+
+		if ($statuses === null)
+		{
+			$statuses = \Model_Task::find_all_statuses();
+		}
+
+		return $statuses;
+	}
+
+	/**
+	 * 送信されたステータスIDが実在するものか検証する
+	 */
+	private static function valid_status($status_id, $statuses)
+	{
+		foreach ($statuses as $status)
+		{
+			if ((string) $status['id'] === (string) $status_id)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * URLで指定された案件を取得する
+	 * find_by_idはclientsとJOINしてuser_idで絞り込むため、他人の案件IDを指定した場合も404になる
+	 */
+	private function find_project_or_404($project_id)
+	{
+		if (empty($project_id))
+		{
+			throw new \HttpNotFoundException();
+		}
+
+		$project = \Model_Project::find_by_id($project_id, $this->login_user['id']);
+
+		if (empty($project))
+		{
+			throw new \HttpNotFoundException();
+		}
+
+		return $project;
+	}
+
+	/**
+	 * URLで指定されたタスクを取得する
+	 * find_by_idはprojects・clientsとJOINしてuser_idで絞り込むため、
+	 * 他人のタスクIDを指定した場合も404になる
+	 */
+	private function find_task_or_404($id)
+	{
+		if (empty($id))
+		{
+			throw new \HttpNotFoundException();
+		}
+
+		$task = \Model_Task::find_by_id($id, $this->login_user['id']);
+
+		if (empty($task))
+		{
+			throw new \HttpNotFoundException();
+		}
+
+		return $task;
+	}
+
+	/**
+	 * タスク登録画面を表示する
+	 */
+	private function render_create($project, $input, $error = null)
+	{
+		$this->template->title   = 'タスク登録';
+		$this->template->content = \View::forge('task/create', array(
+			'project'   => $project,
+			'statuses'  => static::statuses(),
+			'error'     => $error,
+			'name'      => $input['name'],
+			'due_date'  => $input['due_date'],
+			'status_id' => $input['task_status_id'],
+			'memo'      => $input['memo'],
+		), false);
+	}
+
+	/**
+	 * タスク編集画面を表示する
+	 */
+	private function render_edit($task, $input, $error = null)
+	{
+		$this->template->title   = 'タスク編集';
+		$this->template->content = \View::forge('task/edit', array(
+			'task'      => $task,
+			'statuses'  => static::statuses(),
+			'error'     => $error,
+			'name'      => $input['name'],
+			'due_date'  => $input['due_date'],
+			'status_id' => $input['task_status_id'],
+			'memo'      => $input['memo'],
+		), false);
+	}
+
+	/**
+	 * タスク削除の確認画面を表示する
+	 */
+	private function render_delete($task, $error = null)
+	{
+		$this->template->title   = 'タスク削除';
+		$this->template->content = \View::forge('task/delete', array(
+			'task'  => $task,
+			'error' => $error,
+		), false);
 	}
 }

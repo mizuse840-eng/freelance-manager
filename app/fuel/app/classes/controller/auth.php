@@ -15,45 +15,37 @@ class Controller_Auth extends Controller_Template
 	}
 
 	/**
-	 * ログイン画面の表示（GET）／ログイン処理（POST）
+	 * ログイン画面の表示
 	 */
-	public function action_login()
+	public function get_login()
 	{
-		// すでにログイン済みならクライアント一覧へ
-		if (\Session::get('user_id'))
+		$this->redirect_if_logged_in();
+
+		$this->render_login();
+	}
+
+	/**
+	 * ログイン処理
+	 */
+	public function post_login()
+	{
+		$this->redirect_if_logged_in();
+
+		$email    = \Input::post('email');
+		$password = \Input::post('password');
+
+		// DBから該当メールアドレスのユーザーを取得
+		$user = \Model_User::find_by_email($email);
+
+		// ユーザーが存在しないか、パスワードが一致しない
+		if (empty($user) or ! password_verify($password, $user['password']))
 		{
-			\Response::redirect('clients');
+			return $this->render_login('メールアドレスまたはパスワードが正しくありません。');
 		}
 
-		$error = null;
-
-		// フォームが送信された場合（POST）
-		if (\Input::method() === 'POST')
-		{
-			$email    = \Input::post('email');
-			$password = \Input::post('password');
-
-			// DBから該当メールアドレスのユーザーを取得
-			$user = \Model_User::find_by_email($email);
-
-			// ユーザーが存在し、かつパスワードが一致するか
-			if ($user and password_verify($password, $user['password']))
-			{
-				// ログイン成功：セッションにユーザーIDを保存
-				\Session::set('user_id', $user['id']);
-				\Response::redirect('clients');
-			}
-			else
-			{
-				// ログイン失敗
-				$error = 'メールアドレスまたはパスワードが正しくありません。';
-			}
-		}
-
-		$this->template->title   = 'ログイン';
-		$this->template->content = \View::forge('auth/login', array(
-			'error' => $error,
-		));
+		// ログイン成功：セッションにユーザーIDを保存
+		\Session::set('user_id', $user['id']);
+		\Response::redirect('clients');
 	}
 
 	/**
@@ -63,5 +55,27 @@ class Controller_Auth extends Controller_Template
 	{
 		\Session::destroy();
 		\Response::redirect('login');
+	}
+
+	/**
+	 * すでにログイン済みならクライアント一覧へ
+	 */
+	private function redirect_if_logged_in()
+	{
+		if (\Session::get('user_id'))
+		{
+			\Response::redirect('clients');
+		}
+	}
+
+	/**
+	 * ログイン画面を表示する
+	 */
+	private function render_login($error = null)
+	{
+		$this->template->title   = 'ログイン';
+		$this->template->content = \View::forge('auth/login', array(
+			'error' => $error,
+		));
 	}
 }
