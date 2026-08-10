@@ -10,14 +10,43 @@ class Controller_Project extends Controller_Base
 		$client = $this->find_client_or_404($client_id);
 
 		$projects = \Model_Project::find_by_client($client['id'], $this->login_user['id']);
-		$statuses = static::statuses();
 
 		$this->template->title   = $client['name'].'の案件一覧';
+		// projects / statuses は json_encode() で <script> 内のJSに埋め込むため、
+		// HTMLエスケープ用のoutput_filter（Security::htmlentities）は適用しない。
+		// 代わりにjson_encode側でJSコンテキスト向けのエスケープを行う。
 		$this->template->content = \View::forge('project/index', array(
 			'client'   => $client,
-			'projects' => $projects,
-			'statuses' => $statuses,
+			'projects' => static::format_for_list($projects),
+			'statuses' => static::statuses(),
 		), false);
+	}
+
+	/**
+	 * 一覧画面のJSに渡す形にデータを整形する
+	 * 残り日数の色分けはUI設計時のルールのまま維持する
+	 */
+	private static function format_for_list($projects)
+	{
+		$formatted = array();
+
+		foreach ($projects as $project)
+		{
+			$deadline = \Deadline::calculate($project['due_date']);
+
+			$formatted[] = array(
+				'id'                => (int) $project['id'],
+				'name'              => $project['name'],
+				'url'               => $project['url'],
+				'due_date'          => $project['due_date'],
+				'diff_class'        => $deadline['class'],
+				'diff_label'        => $deadline['label'],
+				'project_status_id' => (int) $project['project_status_id'],
+				'status_name'       => $project['status_name'],
+			);
+		}
+
+		return $formatted;
 	}
 
 	/**

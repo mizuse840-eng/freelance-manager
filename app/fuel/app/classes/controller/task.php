@@ -9,15 +9,45 @@ class Controller_Task extends Controller_Base
 	{
 		$project = $this->find_project_or_404($project_id);
 
-		$tasks    = \Model_Task::find_by_project($project['id'], $this->login_user['id']);
-		$statuses = static::statuses();
+		$tasks = \Model_Task::find_by_project($project['id'], $this->login_user['id']);
 
 		$this->template->title   = $project['name'].'のタスク一覧';
+		// tasks / statuses は json_encode() で <script> 内のJSに埋め込むため、
+		// HTMLエスケープ用のoutput_filter（Security::htmlentities）は適用しない。
+		// 代わりにjson_encode側でJSコンテキスト向けのエスケープを行う。
 		$this->template->content = \View::forge('task/index', array(
 			'project'  => $project,
-			'tasks'    => $tasks,
-			'statuses' => $statuses,
+			'tasks'    => static::format_for_list($tasks),
+			'statuses' => static::statuses(),
 		), false);
+	}
+
+	/**
+	 * 一覧画面のJSに渡す形にデータを整形する
+	 * 残り日数の色分け・メモのHTML化はUI設計時のルールのまま維持する
+	 */
+	private static function format_for_list($tasks)
+	{
+		$formatted = array();
+
+		foreach ($tasks as $task)
+		{
+			$deadline = \Deadline::calculate($task['due_date']);
+
+			$formatted[] = array(
+				'id'             => (int) $task['id'],
+				'name'           => $task['name'],
+				'due_date'       => $task['due_date'],
+				'diff_class'     => $deadline['class'],
+				'diff_label'     => $deadline['label'],
+				'task_status_id' => (int) $task['task_status_id'],
+				'status_name'    => $task['status_name'],
+				// memoはhtmlバインドで描画するため、ここでエスケープしてから改行をbrに変換する
+				'memo_html'      => nl2br(e($task['memo'] !== null ? $task['memo'] : '')),
+			);
+		}
+
+		return $formatted;
 	}
 
 	/**

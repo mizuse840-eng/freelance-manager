@@ -47,30 +47,11 @@
 
 <script>
 (function () {
-	// PHPから初期データを渡す
-	var initialTasks = <?php
-
-		// 残り日数の色分け・メモのHTML化はUI設計時のルールのまま維持し、
-		// KnockoutへJSONで渡すデータの一部として事前計算しておく
-		$tasks_for_js = array();
-		foreach ($tasks as $task)
-		{
-			$deadline = \Deadline::calculate($task['due_date']);
-
-			$tasks_for_js[] = array(
-				'id'             => (int) $task['id'],
-				'name'           => $task['name'],
-				'due_date'       => $task['due_date'],
-				'diff_class'     => $deadline['class'],
-				'diff_label'     => $deadline['label'],
-				'task_status_id' => (int) $task['task_status_id'],
-				'status_name'    => $task['status_name'],
-				'memo_html'      => nl2br(e($task['memo'] !== null ? $task['memo'] : '')),
-			);
-		}
-
-		echo json_encode($tasks_for_js, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-	?>;
+	// PHPから初期データを渡す（整形済みのデータをControllerから受け取る）
+	var initialTasks = <?php echo json_encode(
+		$tasks,
+		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+	); ?>;
 	var initialStatuses = <?php echo json_encode(
 		$statuses,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
