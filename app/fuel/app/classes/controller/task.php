@@ -41,7 +41,6 @@ class Controller_Task extends Controller_Base
 				'diff_class'     => $deadline['class'],
 				'diff_label'     => $deadline['label'],
 				'task_status_id' => (int) $task['task_status_id'],
-				'status_name'    => $task['status_name'],
 				// memoはhtmlバインドで描画するため、ここでエスケープしてから改行をbrに変換する
 				'memo_html'      => nl2br(e($task['memo'] !== null ? $task['memo'] : '')),
 			);
@@ -212,23 +211,11 @@ class Controller_Task extends Controller_Base
 			'memo'           => $task['memo'] !== null ? $task['memo'] : '',
 		));
 
-		$status_name = '';
-
-		foreach ($statuses as $status)
-		{
-			if ((string) $status['id'] === (string) $task_status_id)
-			{
-				$status_name = $status['name'];
-				break;
-			}
-		}
-
 		return $this->json_response(array(
 			'success' => true,
 			'task'    => array(
 				'id'             => (int) $id,
 				'task_status_id' => (int) $task_status_id,
-				'status_name'    => $status_name,
 			),
 		));
 	}

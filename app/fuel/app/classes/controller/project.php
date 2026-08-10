@@ -42,7 +42,6 @@ class Controller_Project extends Controller_Base
 				'diff_class'        => $deadline['class'],
 				'diff_label'        => $deadline['label'],
 				'project_status_id' => (int) $project['project_status_id'],
-				'status_name'       => $project['status_name'],
 			);
 		}
 
@@ -217,23 +216,11 @@ class Controller_Project extends Controller_Base
 			'due_date'          => $project['due_date'],
 		));
 
-		$status_name = '';
-
-		foreach ($statuses as $status)
-		{
-			if ((string) $status['id'] === (string) $project_status_id)
-			{
-				$status_name = $status['name'];
-				break;
-			}
-		}
-
 		return $this->json_response(array(
 			'success' => true,
 			'project' => array(
 				'id'                => (int) $id,
 				'project_status_id' => (int) $project_status_id,
-				'status_name'       => $status_name,
 			),
 		));
 	}

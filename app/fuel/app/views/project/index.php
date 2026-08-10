@@ -71,7 +71,6 @@
 		this.diff_class = data.diff_class;
 		this.diff_label = data.diff_label;
 		this.project_status_id = ko.observable(data.project_status_id);
-		this.status_name = ko.observable(data.status_name);
 	}
 
 	function ProjectListViewModel(projects, statuses) {
@@ -104,7 +103,6 @@
 
 				if (json.success) {
 					row.project_status_id(json.project.project_status_id);
-					row.status_name(json.project.status_name);
 					self.messageClass('alert-success');
 					self.message('更新しました。');
 				} else {

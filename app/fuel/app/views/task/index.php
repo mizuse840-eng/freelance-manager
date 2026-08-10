@@ -67,7 +67,6 @@
 		this.diff_label = data.diff_label;
 		this.memo_html = data.memo_html;
 		this.task_status_id = ko.observable(data.task_status_id);
-		this.status_name = ko.observable(data.status_name);
 	}
 
 	function TaskListViewModel(tasks, statuses) {
@@ -100,7 +99,6 @@
 
 				if (json.success) {
 					row.task_status_id(json.task.task_status_id);
-					row.status_name(json.task.status_name);
 					self.messageClass('alert-success');
 					self.message('更新しました。');
 				} else {
