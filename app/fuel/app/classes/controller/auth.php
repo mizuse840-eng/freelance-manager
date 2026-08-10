@@ -34,11 +34,7 @@ class Controller_Auth extends Controller_Template
 			$password = \Input::post('password');
 
 			// DBから該当メールアドレスのユーザーを取得
-			$user = \DB::select('id', 'name', 'email', 'password')
-				->from('users')
-				->where('email', $email)
-				->execute()
-				->current();
+			$user = \Model_User::find_by_email($email);
 
 			// ユーザーが存在し、かつパスワードが一致するか
 			if ($user and password_verify($password, $user['password']))
