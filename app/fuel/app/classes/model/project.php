@@ -76,7 +76,8 @@ class Model_Project
 			'updated_at'        => $now,
 		);
 
-		list($id, $affected_rows) = \DB::insert('projects')
+		// executeは array(挿入されたID, 挿入件数) を返す
+		list($id) = \DB::insert('projects')
 			->set($insert_data)
 			->execute();
 

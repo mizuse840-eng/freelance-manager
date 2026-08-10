@@ -25,9 +25,4 @@ return array(
 		'safe'    => 'text-success',
 	),
 
-	/**
-	 * 一覧画面の表示件数
-	 */
-	'per_page' => 20,
-
 );

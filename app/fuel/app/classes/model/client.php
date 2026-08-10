@@ -45,7 +45,8 @@ class Model_Client
 			'updated_at' => $now,
 		);
 
-		list($id, $affected_rows) = \DB::insert('clients')
+		// executeは array(挿入されたID, 挿入件数) を返す
+		list($id) = \DB::insert('clients')
 			->set($insert_data)
 			->execute();
 
