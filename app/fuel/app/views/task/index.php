@@ -48,16 +48,16 @@
 <script>
 (function () {
 	// PHPから初期データを渡す（整形済みのデータをControllerから受け取る）
-	var initialTasks = <?php echo json_encode(
+	const initialTasks = <?php echo json_encode(
 		$tasks,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	); ?>;
-	var initialStatuses = <?php echo json_encode(
+	const initialStatuses = <?php echo json_encode(
 		$statuses,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	); ?>;
-	var csrfKey   = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
-	var csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
+	const csrfKey = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
+	let csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
 
 	function TaskRow(data) {
 		this.id = data.id;
@@ -70,7 +70,7 @@
 	}
 
 	function TaskListViewModel(tasks, statuses) {
-		var self = this;
+		const self = this;
 
 		self.statuses = statuses;
 
@@ -82,7 +82,7 @@
 		self.messageClass = ko.observable('alert-success');
 
 		self.updateStatus = function (row) {
-			var params = new URLSearchParams();
+			const params = new URLSearchParams();
 			params.append('id', row.id);
 			params.append('task_status_id', row.task_status_id());
 			params.append(csrfKey, csrfToken);

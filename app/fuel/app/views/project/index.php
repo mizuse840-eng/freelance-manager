@@ -52,16 +52,16 @@
 <script>
 (function () {
 	// PHPから初期データを渡す（整形済みのデータをControllerから受け取る）
-	var initialProjects = <?php echo json_encode(
+	const initialProjects = <?php echo json_encode(
 		$projects,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	); ?>;
-	var initialStatuses = <?php echo json_encode(
+	const initialStatuses = <?php echo json_encode(
 		$statuses,
 		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
 	); ?>;
-	var csrfKey   = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
-	var csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
+	const csrfKey = <?php echo json_encode(\Config::get('security.csrf_token_key')); ?>;
+	let csrfToken = <?php echo json_encode(\Security::fetch_token()); ?>;
 
 	function ProjectRow(data) {
 		this.id = data.id;
@@ -74,7 +74,7 @@
 	}
 
 	function ProjectListViewModel(projects, statuses) {
-		var self = this;
+		const self = this;
 
 		self.statuses = statuses;
 
@@ -86,7 +86,7 @@
 		self.messageClass = ko.observable('alert-success');
 
 		self.updateStatus = function (row) {
-			var params = new URLSearchParams();
+			const params = new URLSearchParams();
 			params.append('id', row.id);
 			params.append('project_status_id', row.project_status_id());
 			params.append(csrfKey, csrfToken);
