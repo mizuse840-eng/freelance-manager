@@ -1,7 +1,9 @@
 <?php
 
-class Model_Project
+class Model_Project extends Model_Base
 {
+	protected static $table = 'projects';
+
 	/**
 	 * 指定クライアントの案件一覧を取得（期限の昇順）
 	 * ステータス名も含めて取得する
@@ -64,24 +66,13 @@ class Model_Project
 	 */
 	public static function create($data)
 	{
-		$now = date('Y-m-d H:i:s');
-
-		$insert_data = array(
+		return static::insert(array(
 			'client_id'         => $data['client_id'],
 			'project_status_id' => $data['project_status_id'],
 			'name'              => $data['name'],
 			'url'               => $data['url'],
 			'due_date'          => $data['due_date'],
-			'created_at'        => $now,
-			'updated_at'        => $now,
-		);
-
-		// executeは array(挿入されたID, 挿入件数) を返す
-		list($id) = \DB::insert('projects')
-			->set($insert_data)
-			->execute();
-
-		return $id;
+		));
 	}
 
 	/**
@@ -96,18 +87,12 @@ class Model_Project
 			return false;
 		}
 
-		$update_data = array(
+		return static::update_by_id($id, array(
 			'project_status_id' => $data['project_status_id'],
 			'name'              => $data['name'],
 			'url'               => $data['url'],
 			'due_date'          => $data['due_date'],
-			'updated_at'        => date('Y-m-d H:i:s'),
-		);
-
-		return \DB::update('projects')
-			->set($update_data)
-			->where('id', $id)
-			->execute();
+		));
 	}
 
 	/**
@@ -120,9 +105,7 @@ class Model_Project
 			return false;
 		}
 
-		return \DB::delete('projects')
-			->where('id', $id)
-			->execute();
+		return static::delete_by_id($id);
 	}
 
 	/**
