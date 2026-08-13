@@ -78,6 +78,26 @@ docker compose -p freelance up -d
 
 上記のとおり `freelance-manager` にcloneした場合はディレクトリ名が英数字なので省略しても起動しますが、その場合はコンテナ名やボリューム名が変わるため、このREADME内の他のコマンドも全て `-p` を外す必要があります。混乱を避けるため `-p freelance` に統一しています。
 
+### データベースの接続情報
+
+接続情報はソースコードに持たせず、環境変数から読み込んでいます（[`app/fuel/app/config/db.php`](app/fuel/app/config/db.php)）。値は `docker-compose.yml` で定義しています。
+
+| 環境変数 | 既定値 |
+|---|---|
+| `DB_HOST` | `mysql` |
+| `DB_NAME` | `freelance_db` |
+| `DB_USER` | `user` |
+| `DB_PASSWORD` | `password` |
+| `DB_ROOT_PASSWORD` | `root` |
+
+`${VAR:-default}` の形でローカル開発用の既定値を持たせているため、上記の手順のまま起動できます。別の環境で動かす場合は `.env` かシェルの環境変数で上書きします。
+
+```bash
+DB_PASSWORD=xxxxx docker compose -p freelance up -d
+```
+
+環境の違いは環境変数で表現するため、`config/development/db.php` のような環境別の設定ファイルは置いていません。FuelPHPの雛形にあった `production` / `staging` / `test` の `db.php` は、接続先もパスワードも雛形の値のままで使われていなかったため削除しました。
+
 ### マイグレーション
 
 コンテナ起動後、テーブルの作成と初期データの投入を行います。
@@ -133,6 +153,39 @@ docker compose -p freelance exec php tail -f fuel/app/logs/$(date +%Y/%m/%d).php
 
 非同期更新APIでは、CSRFトークンがリクエストのたびに再生成される仕様に対応するため、レスポンスに最新のトークンを含めてJavaScript側で差し替えています（`Controller_Base::json_response()`）。これを行わないと2回目以降の非同期更新が必ず失敗します。
 
+#### フレームワーク標準の設定との比較
+
+FuelPHPはCSRF対策を自動化する設定を持っています。本アプリがどれを使い、どれを使っていないかを整理します。いずれも `fuel/core/config/config.php` の既定値のままです。
+
+| 設定 | 既定値 | 本アプリ | 使用しない理由 |
+|---|---|---|---|
+| `csrf_autoload` | `false` | 使わない | POST/PUT/DELETEを自動検証する設定。有効にすると全POSTが一律で弾かれ、画面ごとにエラーの出し方を変えられない |
+| `csrf_bad_request_on_fail` | `false` | 使わない | 検証失敗時に400を返す設定。利用者には素の400ではなく「セッションの有効期限が切れました」と表示し、そのまま再送信できる導線を出したい |
+| `csrf_auto_token` | `false` | 使わない | 出力フィルタでフォームにhiddenを自動挿入する設定。非同期更新ではJavaScript側でもトークンを扱う必要があり、結局 `Security::fetch_token()` を明示的に呼ぶことになるため、フォーム側だけ自動化しても一貫しない |
+| `csrf_rotate` | `true` | 既定のまま使用 | 検証成功後にトークンを再生成する。使い回しを防げるため有効のまま |
+| `csrf_expiration` | `0` | `0` を明示 | 後述 |
+
+自動化を使わず `Form::csrf()` と `Security::check_token()` を明示的に書いているのは、**検証失敗時のUXを画面ごとに制御するため**です。コード量は増えますが、利用者が入力内容を失わずに再送信できます。
+
+#### `csrf_expiration => 0` について
+
+この値はトークンの有効期限ではなく、**トークンを保存するcookieの寿命（秒）**です。`0` は無期限ではなく、**ブラウザを閉じると消えるセッションcookie**を意味します。
+
+```php
+// core/classes/security.php … トークンはcookieに保存される
+\Cookie::set(static::$csrf_token_key, static::$csrf_token, $expiration);
+
+// core/classes/cookie.php … 0 はそのまま setcookie に渡る
+$expiration = $expiration > 0 ? $expiration + time() : 0;
+return setcookie($name, $value, $expiration, ...);
+```
+
+`setcookie()` の第3引数が `0` の場合はセッションcookieになるため、正の秒数を設定するより寿命は短くなります。
+
+またトークン自体は、`Security::fetch_token()` がリクエスト内の初回呼び出しで必ず `set_token(true)` を通るため、**画面を描画するたびに再生成されています**。`csrf_expiration` は「同じトークンを使い回せる期間」ではありません。
+
+以上から、現在の設定はトークンを長生きさせるものではないため、値の変更は行っていません。
+
 ### XSS
 
 出力コンテキストごとにエスケープ方法を分けています。
@@ -178,7 +231,7 @@ Modelの検索メソッドは全て `user_id` による絞り込みを含みま�
 
 ## 設計判断
 
-指摘に対して意図的に対応しなかった箇所が2件あります。コードを見ただけでは意図が伝わらないため記載します。
+レビューでのご指摘に対し、意図的に対応を見送った箇所と、一部のみ対応した箇所があります。コードを見ただけでは意図が伝わらないため記載します。
 
 ### 1. FuelPHPのAuthクラスを採用しなかった
 
@@ -234,6 +287,22 @@ Authクラスを採用することで `login_hash` によるセッションハ�
 
 こちらもご意見をいただけると助かります。
 
+### 3. Modelの共通化は定型部分のみに留めた
+
+「4モデルで `find_by_id` / `create` / `update` / `delete` の構造がほぼ同型」というご指摘を受け、`Model_Base` を追加しました。ただし全てを共通化はしていません。
+
+**共通化したもの**
+
+`create` / `update` / `delete` の実体である「タイムスタンプを付けてINSERT / UPDATE / DELETEする」部分です。INSERT / UPDATE / DELETE の記述は3モデル合計9箇所から `Model_Base` の3箇所になり、`created_at` / `updated_at` の付与漏れも構造的に起きなくなりました。
+
+**共通化しなかったもの**
+
+検索系（`find_by_id` など）は各モデルに残しました。`Model_Client` は `clients` を単体で引くだけですが、`Model_Project` / `Model_Task` は所有者を判定するために2〜3テーブルをJOINしており、JOINの経路も取得カラムも異なります。まとめても引数で分岐するだけのメソッドになり、かえって読みにくくなると判断しました。
+
+所有確認の方式も揃えていません。`clients` は `user_id` を直接持つのでWHERE句に足すだけで済みますが、`projects` / `tasks` は持たないため事前に `find_by_id` で確認する必要があります。無理に揃えると `clients` 側に不要なクエリが1回増えます。両方に対応できるよう、`update_by_id` と `delete_by_id` は追加のWHERE条件を受け取れるようにしました。
+
+なお `Model_User` は `Model_Base` を継承していません。ユーザー登録機能が無く `create` / `update` / `delete` を持たないため、共通化する対象がありません。
+
 ## ディレクトリ構成
 
 ```
@@ -247,6 +316,7 @@ app/fuel/app/
 │   │   ├── task.php      タスク管理
 │   │   └── welcome.php   404ページ
 │   ├── model/
+│   │   ├── base.php      Modelの共通処理（タイムスタンプ付与とCRUD）
 │   │   ├── user.php
 │   │   ├── client.php
 │   │   ├── project.php
