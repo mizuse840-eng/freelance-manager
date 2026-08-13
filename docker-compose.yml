@@ -1,10 +1,18 @@
-version: '3.8'
-
 services:
   php:
     build: ./docker/php
     ports:
       - "8080:80"
+    # DBの接続情報は環境変数でアプリに渡す。
+    # アプリ側（fuel/app/config/db.php）はこの値を読むだけで、
+    # 接続情報をコードに持たない。
+    # 既定値はローカル開発用。別の環境で動かす場合は .env かシェルの
+    # 環境変数で上書きする（例: DB_PASSWORD=xxx docker compose -p freelance up -d）
+    environment:
+      DB_HOST: mysql
+      DB_NAME: ${DB_NAME:-freelance_db}
+      DB_USER: ${DB_USER:-user}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
     volumes:
       - ./app:/var/www/html
       # ログはホストとのバインドマウントから外し、Dockerボリュームに置く。
@@ -19,10 +27,10 @@ services:
     image: mysql:8.0
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: freelance_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-freelance_db}
+      MYSQL_USER: ${DB_USER:-user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
     ports:
       - "3306:3306"
     volumes:

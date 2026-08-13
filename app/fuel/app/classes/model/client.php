@@ -1,7 +1,9 @@
 <?php
 
-class Model_Client
+class Model_Client extends Model_Base
 {
+	protected static $table = 'clients';
+
 	/**
 	 * 指定ユーザーのクライアント一覧を取得（作成日の降順）
 	 */
@@ -36,50 +38,31 @@ class Model_Client
 	 */
 	public static function create($data)
 	{
-		$now = date('Y-m-d H:i:s');
-
-		$insert_data = array(
-			'user_id'    => $data['user_id'],
-			'name'       => $data['name'],
-			'created_at' => $now,
-			'updated_at' => $now,
-		);
-
-		// executeは array(挿入されたID, 挿入件数) を返す
-		list($id) = \DB::insert('clients')
-			->set($insert_data)
-			->execute();
-
-		return $id;
+		return static::insert(array(
+			'user_id' => $data['user_id'],
+			'name'    => $data['name'],
+		));
 	}
 
 	/**
 	 * 更新。updated_atは自動でセットする
-	 * user_idも条件に含める
+	 * clientsはuser_idを直接持つため、WHERE句に足して1クエリで所有者を絞り込む
 	 */
 	public static function update($id, $user_id, $data)
 	{
-		$update_data = array(
-			'name'       => $data['name'],
-			'updated_at' => date('Y-m-d H:i:s'),
+		return static::update_by_id(
+			$id,
+			array('name' => $data['name']),
+			array('user_id' => $user_id)
 		);
-
-		return \DB::update('clients')
-			->set($update_data)
-			->where('id', $id)
-			->where('user_id', $user_id)
-			->execute();
 	}
 
 	/**
-	 * 削除。user_idも条件に含める
+	 * 削除。updateと同じくuser_idも条件に含める
 	 */
 	public static function delete($id, $user_id)
 	{
-		return \DB::delete('clients')
-			->where('id', $id)
-			->where('user_id', $user_id)
-			->execute();
+		return static::delete_by_id($id, array('user_id' => $user_id));
 	}
 
 	/**

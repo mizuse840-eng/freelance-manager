@@ -1,7 +1,9 @@
 <?php
 
-class Model_Task
+class Model_Task extends Model_Base
 {
+	protected static $table = 'tasks';
+
 	/**
 	 * 指定案件のタスク一覧を取得（期限の昇順）
 	 * ステータス名も含めて取得する
@@ -66,24 +68,13 @@ class Model_Task
 	 */
 	public static function create($data)
 	{
-		$now = date('Y-m-d H:i:s');
-
-		$insert_data = array(
+		return static::insert(array(
 			'project_id'     => $data['project_id'],
 			'task_status_id' => $data['task_status_id'],
 			'name'           => $data['name'],
 			'due_date'       => $data['due_date'],
 			'memo'           => $data['memo'] !== '' ? $data['memo'] : null,
-			'created_at'     => $now,
-			'updated_at'     => $now,
-		);
-
-		// executeは array(挿入されたID, 挿入件数) を返す
-		list($id) = \DB::insert('tasks')
-			->set($insert_data)
-			->execute();
-
-		return $id;
+		));
 	}
 
 	/**
@@ -99,18 +90,12 @@ class Model_Task
 			return false;
 		}
 
-		$update_data = array(
+		return static::update_by_id($id, array(
 			'task_status_id' => $data['task_status_id'],
 			'name'           => $data['name'],
 			'due_date'       => $data['due_date'],
 			'memo'           => $data['memo'] !== '' ? $data['memo'] : null,
-			'updated_at'     => date('Y-m-d H:i:s'),
-		);
-
-		return \DB::update('tasks')
-			->set($update_data)
-			->where('id', $id)
-			->execute();
+		));
 	}
 
 	/**
@@ -123,9 +108,7 @@ class Model_Task
 			return false;
 		}
 
-		return \DB::delete('tasks')
-			->where('id', $id)
-			->execute();
+		return static::delete_by_id($id);
 	}
 
 	/**
