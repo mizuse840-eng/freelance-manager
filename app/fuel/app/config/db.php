@@ -1,25 +1,22 @@
 <?php
 /**
- * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
+ * データベース設定
  *
- * @package    Fuel
- * @version    1.8.2
- * @author     Fuel Development Team
- * @license    MIT License
- * @copyright  2010 - 2019 Fuel Development Team
- * @link       https://fuelphp.com
+ * 接続情報はソースコードに持たず、環境変数から読み込む。
+ * 値は docker-compose.yml の php サービスの environment で定義している。
+ *
+ * 環境の違いは環境変数で表現するため、config/development/db.php のような
+ * 環境別の設定ファイルは置いていない。FuelPHPの雛形にあった
+ * production / staging / test の db.php は、接続先もパスワードも雛形のままで
+ * 使われていなかったため削除した。
  */
-
-/**
- * -----------------------------------------------------------------------------
- *  Global database settings
- * -----------------------------------------------------------------------------
- *
- *  Set database configurations here to override environment specific
- *  configurations
- *
- */
-
 return array(
-
+	'default' => array(
+		'connection'  => array(
+			'dsn'        => 'mysql:host='.getenv('DB_HOST').';dbname='.getenv('DB_NAME'),
+			'username'   => getenv('DB_USER'),
+			'password'   => getenv('DB_PASSWORD'),
+		),
+		'charset' => 'utf8mb4',
+	),
 );
