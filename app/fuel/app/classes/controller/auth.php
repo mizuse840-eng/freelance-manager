@@ -79,9 +79,19 @@ class Controller_Auth extends Controller_Template
 
 	/**
 	 * ログアウト処理
+	 *
+	 * action_logout ではなく post_logout にしているのは、GETで実行できると
+	 * 外部サイトに <img src="/logout"> を置かれるだけで強制ログアウトさせられるため
+	 * （ログアウトCSRF）。POSTに限定した上でトークンも検証する。
 	 */
-	public function action_logout()
+	public function post_logout()
 	{
+		// 検証に失敗した場合はログアウトさせず、元の画面に戻す
+		if ( ! \Security::check_token())
+		{
+			\Response::redirect('clients');
+		}
+
 		\Session::destroy();
 		\Response::redirect('login');
 	}

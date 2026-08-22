@@ -11,7 +11,11 @@
 	<nav class="navbar navbar-dark bg-dark px-3">
 		<span class="navbar-brand">フリーランス案件管理</span>
 		<?php if (\Session::get('user_id')): ?>
-			<a href="/logout" class="btn btn-outline-light btn-sm">ログアウト</a>
+			<!-- ログアウトCSRF対策のためPOST。見た目は従来のボタンのまま -->
+			<form method="post" action="/logout" class="m-0">
+				<?php echo \Form::csrf(); ?>
+				<button type="submit" class="btn btn-outline-light btn-sm">ログアウト</button>
+			</form>
 		<?php endif; ?>
 	</nav>
 
