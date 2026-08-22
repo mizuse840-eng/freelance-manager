@@ -51,7 +51,22 @@ class Controller_Auth extends Controller_Template
 			return $this->render_login('メールアドレスまたはパスワードが正しくありません。');
 		}
 
-		// ログイン成功：セッションにユーザーIDを保存
+		// ログイン成功：セッション固定化対策として、認証前のセッションを破棄してから
+		// 新しいセッションを開始する。
+		//
+		// FuelPHP には \Session::rotate() があるが、これだけでは対策にならない。
+		// rotate() はセッションIDを差し替えるだけで、書き込み時
+		// （Session_File::write()）に古いIDのファイルへ
+		//     array('rotated_session_id' => 新しいID)
+		// という転送用のレコードを残す。Session_File::read() はこれを辿るため、
+		// 攻撃者が仕込んだ古いIDのままでもログイン後のセッションを読めてしまう。
+		// 実機で確認済み（README「セッション固定化」参照）。
+		//
+		// destroy() は古いセッションファイルを削除しcookieも消すため転送先が残らない。
+		// 続けて start() すると新しいIDでセッションが作り直される。
+		\Session::destroy();
+		\Session::start();
+
 		\Session::set('user_id', $user['id']);
 
 		// 権限が変わる契機なのでCSRFトークンを作り直す。

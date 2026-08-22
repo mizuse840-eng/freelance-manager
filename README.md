@@ -230,6 +230,46 @@ FuelPHPの既定では、`Security::fetch_token()` がリクエスト内の初�
 | 非同期更新のあとにフォーム送信 | 失敗 | 成功 |
 | 不正なトークン / トークン無し | 拒否 | 拒否 |
 
+### セッション固定化
+
+ログイン成功時に、認証前のセッションを破棄してから新しいセッションを開始しています（`Controller_Auth::post_login()`）。これを行わないと、攻撃者が被害者のセッションIDを事前に固定しておくことで、ログイン後にそのIDでなりすませます。IPA「安全なウェブサイトの作り方」の「セッション管理の不備」に該当します。
+
+FuelPHPは `rotation_time`（既定300秒）でセッションIDを自動的に回転させますが、これは経過時間による回転であって**ログインの瞬間には働きません**。対策として設計されたものではないため、認証時に明示的に作り直す必要があります。
+
+**`Session::rotate()` では対策にならない**
+
+当初は `\Session::rotate()` を呼ぶ想定でしたが、これだけでは防げないことが分かりました。`rotate()` はセッションIDを差し替えるだけで、書き込み時（`Session_File::write()`）に**古いIDのファイルへ転送用のレコードを残します**。
+
+```php
+// core/classes/session/file.php … write() の末尾
+if (isset($this->keys['previous_id']) and $this->keys['previous_id'] != $this->keys['session_id'])
+{
+    // 古いセッションファイルを新しいセッションへのポインタにする
+    $payload = $this->_serialize(array('rotated_session_id' => $this->keys['session_id']));
+    $this->_write_file($this->keys['previous_id'], $payload);
+}
+```
+
+`read()` はこの `rotated_session_id` を辿るため、攻撃者が仕込んだ**古いIDのままでもログイン後のセッションを読めてしまいます**。実機で確認したところ、`rotate()` を入れた状態でも古いIDでログイン状態を奪えました。
+
+```
+# rotate() を呼んだあとのセッションディレクトリ
+fuelfid_4c895ecf...   ← 新しいセッション（user_id を保持）
+fuelfid_b25c9117...   ← 古いID。中身は {"rotated_session_id":"4c895ecf..."}
+```
+
+**採用した方法**
+
+```php
+// 古いセッションファイルを削除してから作り直すので、転送先が残らない
+\Session::destroy();
+\Session::start();
+
+\Session::set('user_id', $user['id']);
+```
+
+`destroy()` は古いセッションファイルを削除しcookieも消すため、転送用レコードが残りません。この方法に変えた結果、古いIDでのアクセスはログイン画面へリダイレクトされるようになりました。セッションデータは `set()` を後に置くことで保持されます。
+
 ### XSS
 
 出力コンテキストごとにエスケープ方法を分けています。
