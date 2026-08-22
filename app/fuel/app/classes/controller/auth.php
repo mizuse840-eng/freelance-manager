@@ -53,6 +53,12 @@ class Controller_Auth extends Controller_Template
 
 		// ログイン成功：セッションにユーザーIDを保存
 		\Session::set('user_id', $user['id']);
+
+		// 権限が変わる契機なのでCSRFトークンを作り直す。
+		// csrf_rotate を false にしている（config.php参照）ため、
+		// 通常のPOSTでは再生成されず、ここが唯一の再生成契機になる。
+		\Security::set_token(true);
+
 		\Response::redirect('clients');
 	}
 
