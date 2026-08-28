@@ -298,6 +298,33 @@ fuelfid_b25c9117...   ← 古いID。中身は {"rotated_session_id":"4c895ecf..
 
 タスクのメモは改行を `<br>` に変換して表示する必要があるため、エスケープしてから `nl2br()` を適用しています。
 
+#### URLのスキーム制限
+
+案件URLは一覧で `href` 属性に出力するため、エスケープだけでは不十分です。`filter_var($url, FILTER_VALIDATE_URL)` は **`//` さえあればスキームを問わず通す**ため、これだけだと次の値が検証を通過します。
+
+```
+javascript://%0aalert(document.domain)   => 通過してしまう
+JaVaScRiPt://%0aalert(1)                 => 通過してしまう
+```
+
+そのため `Controller_Project::validate()` でスキームを `http` / `https` に限定しています。スキーム名は大文字小文字を区別しない（RFC 3986）ので、小文字に揃えてから比較しています。
+
+```php
+private static function valid_url_scheme($url)
+{
+    $scheme = parse_url($url, PHP_URL_SCHEME);
+
+    if ( ! is_string($scheme))
+    {
+        return false;
+    }
+
+    return in_array(strtolower($scheme), array('http', 'https'), true);
+}
+```
+
+リンクには `target="_blank"` が付いており、Chromiumは新規コンテキストでの `javascript:` 遷移をブロックするため、この対応前も実際には発火しませんでした。ただしこれは別タブで開くというUI都合で付けた属性であり、XSS対策として設計したものではありません。属性を外した瞬間に蓄積型XSSになるため、入力側で塞いでいます。
+
 ### SQLインジェクション
 
 DBアクセスは全てModelクラスに集約し、FuelPHPのクエリビルダ（`DB::select()` / `DB::insert()` / `DB::update()` / `DB::delete()`）を使用しています。`DB::query()` による文字列組み立ては使用していません。
@@ -405,6 +432,28 @@ Authクラスを採用することで `login_hash` によるセッションハ�
 所有確認の方式も揃えていません。`clients` は `user_id` を直接持つのでWHERE句に足すだけで済みますが、`projects` / `tasks` は持たないため事前に `find_by_id` で確認する必要があります。無理に揃えると `clients` 側に不要なクエリが1回増えます。両方に対応できるよう、`update_by_id` と `delete_by_id` は追加のWHERE条件を受け取れるようにしました。
 
 なお `Model_User` は `Model_Base` を継承していません。ユーザー登録機能が無く `create` / `update` / `delete` を持たないため、共通化する対象がありません。
+
+## 今後の課題
+
+セキュリティ面で、意図的に実装していない項目です。理由とあわせて記載します。
+
+### ログイン試行回数の制限
+
+実装していません。課題の要件定義に含まれておらず、試行回数の記録・時間経過でのリセット・ロックアウトの解除といった仕組みが必要になり、スコープを超えると判断したためです。
+
+パスワードのハッシュに bcrypt（`password_hash()` の `PASSWORD_DEFAULT`）を使用しているため、1回あたりの照合コストが高く、総当たりの効率は低く抑えられています。とはいえ試行自体を止める仕組みではないため、実運用に載せる場合は別途必要になります。
+
+### CookieのSameSite属性
+
+設定していません。FuelPHP 1.8.2 の `Cookie` クラスが `SameSite` に対応しておらず、該当するコードが存在しないためです（`fuel/core/classes/cookie.php` に `samesite` の記述なし）。フレームワーク標準の範囲では指定できません。
+
+現代のブラウザは `SameSite` 未指定のCookieを `Lax` として扱うため、実害は限定的です。`Lax` ではクロスサイトからのPOSTにCookieが送られないので、CSRFに対しても補助的に働きます。厳密に指定する場合は `Cookie` クラスの拡張か、`header()` での直接出力が必要です。
+
+### `cookie.secure` を `false` にしている
+
+HTTPのローカル環境で動かしているためです。`true` にするとHTTPS接続でしかCookieが送信されず、ローカルでログインできなくなります。
+
+本番でHTTPSに載せる場合は `true` にする必要があります。`app/fuel/app/config/config.php` の `cookie.secure` を切り替えます。
 
 ## ディレクトリ構成
 
