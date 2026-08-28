@@ -264,6 +264,15 @@ class Controller_Project extends Controller_Base
 			return 'URLの形式が正しくありません。';
 		}
 
+		// スキームを http / https に限定する。
+		// FILTER_VALIDATE_URL は「//」さえあればスキームを問わず通すため、
+		// javascript://%0aalert(1) のような値が通過してしまう。
+		// このURLは一覧で href にそのまま出力しており、通すと蓄積型XSSになる。
+		if ($input['url'] !== '' && ! static::valid_url_scheme($input['url']))
+		{
+			return 'URLは http:// または https:// で入力してください。';
+		}
+
 		if ($input['due_date'] === '')
 		{
 			return '期限を入力してください。';
@@ -317,6 +326,24 @@ class Controller_Project extends Controller_Base
 		}
 
 		return false;
+	}
+
+	/**
+	 * URLのスキームが http / https のいずれかか検証する
+	 *
+	 * スキーム名は大文字小文字を区別しない（RFC 3986）ため、
+	 * JaVaScRiPt: のような表記でも弾けるよう小文字に揃えてから比較する。
+	 */
+	private static function valid_url_scheme($url)
+	{
+		$scheme = parse_url($url, PHP_URL_SCHEME);
+
+		if ( ! is_string($scheme))
+		{
+			return false;
+		}
+
+		return in_array(strtolower($scheme), array('http', 'https'), true);
 	}
 
 	/**
