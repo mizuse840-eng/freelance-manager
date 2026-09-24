@@ -51,16 +51,47 @@ class Controller_Auth extends Controller_Template
 			return $this->render_login('メールアドレスまたはパスワードが正しくありません。');
 		}
 
-		// ログイン成功：セッションにユーザーIDを保存
+		// ログイン成功：セッション固定化対策として、認証前のセッションを破棄してから
+		// 新しいセッションを開始する。
+		//
+		// FuelPHP には \Session::rotate() があるが、これだけでは対策にならない。
+		// rotate() はセッションIDを差し替えるだけで、書き込み時
+		// （Session_File::write()）に古いIDのファイルへ
+		//     array('rotated_session_id' => 新しいID)
+		// という転送用のレコードを残す。Session_File::read() はこれを辿るため、
+		// 攻撃者が仕込んだ古いIDのままでもログイン後のセッションを読めてしまう。
+		// 実機で確認済み（README「セッション固定化」参照）。
+		//
+		// destroy() は古いセッションファイルを削除しcookieも消すため転送先が残らない。
+		// 続けて start() すると新しいIDでセッションが作り直される。
+		\Session::destroy();
+		\Session::start();
+
 		\Session::set('user_id', $user['id']);
+
+		// 権限が変わる契機なのでCSRFトークンを作り直す。
+		// csrf_rotate を false にしている（config.php参照）ため、
+		// 通常のPOSTでは再生成されず、ここが唯一の再生成契機になる。
+		\Security::set_token(true);
+
 		\Response::redirect('clients');
 	}
 
 	/**
 	 * ログアウト処理
+	 *
+	 * action_logout ではなく post_logout にしているのは、GETで実行できると
+	 * 外部サイトに <img src="/logout"> を置かれるだけで強制ログアウトさせられるため
+	 * （ログアウトCSRF）。POSTに限定した上でトークンも検証する。
 	 */
-	public function action_logout()
+	public function post_logout()
 	{
+		// 検証に失敗した場合はログアウトさせず、元の画面に戻す
+		if ( ! \Security::check_token())
+		{
+			\Response::redirect('clients');
+		}
+
 		\Session::destroy();
 		\Response::redirect('login');
 	}

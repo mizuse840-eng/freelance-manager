@@ -71,3 +71,21 @@ Fuel::$env = Arr::get($_SERVER, 'FUEL_ENV', Arr::get($_ENV, 'FUEL_ENV', getenv('
 
 // Initialize the framework with the config file.
 \Fuel::init('config.php');
+
+/**
+ * CSRFトークンをセッション単位にする。
+ *
+ * \Security::fetch_token() は「まだトークンを決めていない」状態で呼ばれると
+ * 必ず set_token(true) を通り、新しいトークンを生成してcookieに書き込む。
+ * つまり Form::csrf() を含む画面を描画するたびにトークンが変わり、cookieは
+ * タブ間で共有されるため、あるタブで画面を開くと他のタブのフォームが無効になる。
+ *
+ * ここで先に set_token(false) を呼んでおくと、cookieに残っているトークンを
+ * そのまま「今回のトークン」として採用するため（cookieが無いときだけ生成する）、
+ * 以降の fetch_token() は描画のたびに値を変えない。
+ *
+ * コントローラのbefore()ではなくここに置いているのは、Controller_Base と
+ * Controller_Auth に継承関係が無く、両方が確実に通る場所がここだけのため。
+ * ルーティング前なので404画面など例外的な経路でも同じ扱いになる。
+ */
+\Security::set_token(false);
